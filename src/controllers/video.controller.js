@@ -1,65 +1,22 @@
-import { asyncHandler } from "../utils/asyncHandler.js"
-import { Video } from "../models/video.model.js"
-import { ApiError } from "../utils/apiError.js"
-import { ApiResponse } from "../utils/ApiResponse.js"
-import { generateHLS } from "../utils/hls.js"
-import { generateThumbnail } from "../utils/thumbnail.js"
-import { generateMasterPlaylist } from "../utils/masterPlaylist.js"
-import { uploadHLSFolder } from "../utils/upload.js"
-import { getVideoDuration } from "../utils/duration.js"
-import { v4 as uuidv4 } from "uuid"
-
-const processVideo = async (videoBuffer) => {
-  try {
-    const videoId = uuidv4();
-    
-    // Step 1: Generate HLS variants
-    console.log("Generating HLS variants...");
-    const { baseFolder, variants } = await generateHLS(videoBuffer, videoId);
-
-    // Step 2: Generate thumbnail
-    console.log("Generating thumbnail...");
-    const thumbnailUrl = await generateThumbnail(videoBuffer, videoId);
-
-    // Step 3: Get duration
-    console.log("Getting duration...");
-    const duration = await getVideoDuration(videoBuffer);
-
-    // Step 4: Generate master playlist
-    console.log("Generating master playlist...");
-    const masterUrl = await generateMasterPlaylist(videoId, variants);
-
-    // Step 5: Upload to UploadThing
-    console.log("Uploading files...");
-    const uploadedUrls = await uploadHLSFolder(baseFolder, videoId);
-
-    return {
-      masterUrl: uploadedUrls[`${videoId}/master.m3u8`] || masterUrl,
-      variants,
-      thumbnailUrl: uploadedUrls[`${videoId}/thumb.jpg`] || thumbnailUrl,
-      duration,
-      basePath: baseFolder
-    };
-  } catch (error) {
-    console.error("Video processing error:", error);
-    throw error;
-  }
-};
+import { processVideo } from "../utils/videoProcessor.js";
+import { Video } from "../models/video.model.js";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/AsyncHandler.js";
 
 const uploadHLSVideo = asyncHandler(async (req, res) => {
+  if (!req.file) throw new ApiError(400, "Video file is required");
+
   const owner = req.user._id;
   const { title, description } = req.body;
-
-  if (!req.file) {
-    throw new ApiError(400, "Video file is required");
-  }
-
+  console.log("FILE RECEIVED? =>", req.file);
   try {
-    // 1. Run HLS pipeline
-    const { masterUrl, variants, thumbnailUrl, duration, basePath } = await processVideo(req.file.buffer);
+    // 1. Process Video (universal function)
+    const { videoId, masterUrl, variants, thumbnailUrl, duration } =
+      await processVideo(req.file.buffer);
 
     if (!masterUrl || !variants) {
-      throw new ApiError(500, "Failed to process video");
+      throw new ApiError(500, "Video processing pipeline failed");
     }
 
     // 2. Save in MongoDB
@@ -68,21 +25,23 @@ const uploadHLSVideo = asyncHandler(async (req, res) => {
       variants,
       thumbnail: thumbnailUrl,
       title: title || "Untitled Video",
-      description,
+      description: description || "No description", 
       duration,
-      segmentsBasePath: basePath,
-      owner
+      segmentsBasePath: videoId,
+      owner,
     });
 
-    // 3. Populate owner for frontend convenience
-    const createdVideo = await video.populate("owner", "username email avatar");
+    const populated = await video.populate("owner", "username email avatar");
 
-    return res.status(201).json(
-      new ApiResponse(201, createdVideo, "Video processed & saved successfully")
-    );
-  } catch (error) {
-    throw new ApiError(500, error.message || "Error processing video");
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(201, populated, "Video processed & saved successfully")
+      );
+  } catch (err) {
+    console.error(err);
+    throw new ApiError(500, err.message || "Upload failed");
   }
 });
 
-export { uploadHLSVideo, processVideo };
+export { uploadHLSVideo };

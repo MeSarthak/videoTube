@@ -1,5 +1,3 @@
-// Hinglish code:
-
 import { spawn } from "child_process";
 
 export const hasAudioTrack = async (inputBuffer) => {

@@ -1,41 +1,33 @@
-// Hinglish code:
-
 import { spawn } from "child_process";
-import fs from "fs";
 import path from "path";
+import fs from "fs";
 
 export const generateThumbnail = async (inputBuffer, videoId) => {
-  const thumbPath = path.join("temp", videoId, "thumb.jpg");
+  const outDir = path.join("temp", videoId);
+  fs.mkdirSync(outDir, { recursive: true });
+  const thumbPath = path.join(outDir, "thumb.jpg");
 
   return new Promise((resolve, reject) => {
     const ff = spawn("ffmpeg", [
       "-i", "pipe:0",
-      "-ss", "00:00:02", // 2nd second ka frame
+      "-ss", "00:00:02",
       "-vframes", "1",
-      "-q:v", "2",       // quality high
+      "-q:v", "2",
       thumbPath
     ]);
 
-    let errorOutput = "";
+    let errStr = "";
 
     ff.stdin.write(inputBuffer);
     ff.stdin.end();
 
-    ff.stderr.on("data", (d) => {
-      errorOutput += d.toString();
+    ff.stderr.on("data", d => errStr += d.toString());
+
+    ff.on("close", code => {
+      if (code === 0) resolve(thumbPath);
+      else reject(new Error(`Thumbnail failed [${code}]: ${errStr}`));
     });
 
-    ff.on("close", (code) => {
-      if (code === 0) {
-        console.log("Thumbnail:", thumbPath);
-        resolve(thumbPath);
-      } else {
-        reject(new Error(`FFmpeg failed with code ${code}: ${errorOutput}`));
-      }
-    });
-
-    ff.on("error", (err) => {
-      reject(new Error(`FFmpeg process error: ${err.message}`));
-    });
+    ff.on("error", err => reject(err));
   });
 };

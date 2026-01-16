@@ -1,37 +1,62 @@
-// Hinglish code:
-
 import fs from "fs";
 import path from "path";
 import { UTApi } from "uploadthing/server";
+import { File } from "buffer";
+
+const utapi = new UTApi();
 
 export const uploadHLSFolder = async (folderPath, videoId) => {
-  const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
+  try {
+    const files = [];
+    const fileNames = [];
 
-  const files = [];
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir)) {
+        const fullPath = path.join(dir, entry);
+        const stat = fs.statSync(fullPath);
 
-  const walk = (dir) => {
-    fs.readdirSync(dir).forEach((f) => {
-      const full = path.join(dir, f);
-      if (fs.statSync(full).isDirectory()) {
-        walk(full);
-      } else {
-        const data = fs.readFileSync(full);
-        const relativePath = path.relative(folderPath, full).replace(/\\/g, "/");
-        files.push({ data, name: `${videoId}/${relativePath}` });
+        if (stat.isDirectory()) {
+          walk(fullPath);
+        } else {
+          const buffer = fs.readFileSync(fullPath);
+          const relativePath = path.relative(folderPath, fullPath).replace(/\\/g, '/');
+
+          const fileName = `${videoId}/${relativePath}`;
+          fileNames.push(fileName);
+          
+          files.push(
+            new File([buffer], fileName, {
+              type: getMimeType(relativePath)
+            })
+          );
+        }
+      }
+    };
+
+    walk(folderPath);
+
+    // Actually upload to UploadThing
+    const response = await utapi.uploadFiles(files); 
+
+    // Create a mapping of fileName -> URL
+    const uploadedMap = {};
+    response.forEach((r, index) => {
+      if (r.data) {
+        uploadedMap[fileNames[index]] = r.data.url;
       }
     });
-  };
 
-  walk(folderPath);
+    return uploadedMap;
+  } catch (error) {
+    console.error("UploadThing upload error:", error);
+    throw error;
+  }
+};
 
-  const result = await utapi.uploadFiles(
-    files.map((f) => new File([f.data], f.name))
-  );
-
-  const urls = {};
-  result.forEach((r) => {
-    urls[r.fileKey] = r.ufsUrl;
-  });
-
-  return urls;
+// Utility for MIME detection
+const getMimeType = (file) => {
+  if (file.endsWith(".ts")) return "video/mp2t";
+  if (file.endsWith(".m3u8")) return "application/vnd.apple.mpegurl";
+  if (file.endsWith(".jpg")) return "image/jpeg";
+  return "application/octet-stream";
 };
