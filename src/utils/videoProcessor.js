@@ -8,10 +8,13 @@ import fs from "fs";
 
 const processVideo = async (videoBuffer) => {
   const videoId = uuidv4();
+  let baseFolder;
 
   try {
     // Step 1: HLS variants
-    const { baseFolder, variants } = await generateHLS(videoBuffer, videoId);
+    const result = await generateHLS(videoBuffer, videoId);
+    baseFolder = result.baseFolder;
+    const variants = result.variants;
 
     // Step 2: Thumbnail
     const thumbnailLocal = await generateThumbnail(videoBuffer, videoId);
@@ -25,9 +28,6 @@ const processVideo = async (videoBuffer) => {
     // Step 5: Upload folder -> UploadThing
     const uploadedMap = await uploadHLSFolder(baseFolder, videoId);
 
-    // Cleanup local temp folder
-    fs.rmSync(baseFolder, { recursive: true, force: true });
-
     return {
       videoId,
       duration,
@@ -40,6 +40,11 @@ const processVideo = async (videoBuffer) => {
   } catch (err) {
     console.error("Video Processing Failed:", err);
     throw err;
+  } finally {
+    // Cleanup local temp folder (always runs, even on error)
+    if (baseFolder && fs.existsSync(baseFolder)) {
+      fs.rmSync(baseFolder, { recursive: true, force: true });
+    }
   }
 };
 
