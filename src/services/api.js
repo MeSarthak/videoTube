@@ -42,6 +42,20 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Retry logic for network errors (max 3 retries)
+    if (error.message === 'Network Error' || error.code === 'ECONNABORTED') {
+      if (!originalRequest._retryCount) {
+        originalRequest._retryCount = 0;
+      }
+
+      if (originalRequest._retryCount < 3) {
+        originalRequest._retryCount++;
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * originalRequest._retryCount));
+        return api(originalRequest);
+      }
+    }
+
     // If error is 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
