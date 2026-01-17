@@ -1,15 +1,18 @@
 import { useVideos } from '../hooks/useVideo';
 import VideoCard from '../components/video/VideoCard';
 import VideoGrid from '../components/video/VideoGrid';
-import Spinner from '../components/common/Spinner';
 
 const Home = () => {
-  const { videos, isLoading, isError } = useVideos();
+  const { videos, isLoading, isError, mutate } = useVideos();
 
   // Render video cards
   const videoCards = videos?.map((video) => (
     <VideoCard key={video._id} video={video} />
   ));
+
+  const handleRetry = () => {
+    mutate();
+  };
 
   return (
     <div>
@@ -21,7 +24,8 @@ const Home = () => {
       <VideoGrid 
         videos={videoCards} 
         loading={isLoading} 
-        error={isError} 
+        error={isError}
+        onRetry={handleRetry}
       />
     </div>
   );
