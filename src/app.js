@@ -6,28 +6,11 @@ import dotenv from "dotenv";
 dotenv.config();
 const app = express();
 
-// app.use(cors({
-//     origin: function(origin, callback) {
-//         const allowedOrigins = [
-//             "http://localhost:3000",
-//             "http://localhost:5173",
-//             "http://localhost:5174",
-//             process.env.CORS_ORIGIN
-//         ].filter(Boolean);
-
-//         if (!origin || allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error("Not allowed by CORS"));
-//         }
-//     },
-//     credentials: true,
-// }));
-
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:5174",
+  "https://video-tube-git-frontend-mesarthaks-projects.vercel.app/",
   process.env.CORS_ORIGIN,
 ];
 
