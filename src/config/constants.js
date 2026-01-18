@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = 'https://backend-project-5bs5.onrender.com/api/v1';
+export const API_BASE_URL = 'https://videotube-backend-bhcfgygwgea7dwbz.centralindia-01.azurewebsites.net/api/v1';
 
 // API Endpoints
 export const API_ENDPOINTS = {
