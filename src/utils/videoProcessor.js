@@ -25,7 +25,7 @@ const processVideo = async (videoBuffer) => {
     // Step 4: Master playlist generate
     const masterLocal = await generateMasterPlaylist(videoId, variants);
 
-    // Step 5: Upload folder -> UploadThing
+    // Step 5: Upload folder -> Azure Blob Storage
     const uploadedMap = await uploadHLSFolder(baseFolder, videoId);
 
     return {

@@ -16,7 +16,6 @@
   "author": "Sarthak Singh Choudhary",
   "license": "ISC",
   "devDependencies": {
-    "@uploadthing/shared": "^7.1.10",
     "nodemon": "^3.1.11",
     "prettier": "^3.7.4"
   },
@@ -33,7 +32,6 @@
     "mongoose": "^9.1.0",
     "mongoose-aggregate-paginate-v2": "^1.1.4",
     "multer": "^2.0.2",
-    "uploadthing": "^7.7.4",
     "uuid": "^13.0.0"
   }
 }
