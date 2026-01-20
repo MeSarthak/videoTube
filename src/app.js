@@ -21,7 +21,16 @@ app.use(cookieParser());
 //import routes
 import { userRouter  } from "./routes/user.routes.js";
 import { videoRouter  } from "./routes/video.routes.js";
+
 //use routes
+
+app.use("/health-check", (req, res) => {
+    res.status(200).json({
+        statusCode: 200,
+        message: "API is running...",
+        success: true
+    });
+});
 app.use("/api/v1/users", userRouter); //http://localhost:5000/api/v1/users/....
 app.use("/api/v1/videos", videoRouter); //http://localhost:5000/api/v1/videos/....
 
