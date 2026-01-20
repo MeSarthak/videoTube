@@ -1,5 +1,5 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/AsyncHandler.js";
+import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -124,7 +124,7 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax"
   };
-  console.log("Logged in user:", loggedInUser);
+
   return res
     .status(200)
     .cookie("refreshToken", refreshToken, options)

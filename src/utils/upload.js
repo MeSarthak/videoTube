@@ -1,59 +1,54 @@
 import fs from "fs";
 import path from "path";
-import { UTApi } from "uploadthing/server";
-import { File } from "buffer";
+import { BlobServiceClient } from "@azure/storage-blob";
 
-const utapi = new UTApi();
+const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+if (!connectionString) {
+  throw new Error(
+    "AZURE_STORAGE_CONNECTION_STRING environment variable is not set"
+  );
+}
+
+const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+
+const containerName = process.env.CONTAINER_NAME || "videos";
 
 export const uploadHLSFolder = async (folderPath, videoId) => {
   try {
-    const files = [];
-    const fileNames = [];
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const uploadedMap = {};
 
-    const walk = (dir) => {
+    const walk = async (dir) => {
       for (const entry of fs.readdirSync(dir)) {
         const fullPath = path.join(dir, entry);
         const stat = fs.statSync(fullPath);
 
         if (stat.isDirectory()) {
-          walk(fullPath);
+          await walk(fullPath);
         } else {
           const buffer = fs.readFileSync(fullPath);
           const relativePath = path.relative(folderPath, fullPath).replace(/\\/g, '/');
+          const blobName = `${videoId}/${relativePath}`;
 
-          const fileName = `${videoId}/${relativePath}`;
-          fileNames.push(fileName);
-          
-          files.push(
-            new File([buffer], fileName, {
-              type: getMimeType(relativePath)
-            })
-          );
+          // Upload to Azure Blob Storage
+          const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+          await blockBlobClient.upload(buffer, buffer.length, {
+            blobHTTPHeaders: { blobContentType: getMimeType(relativePath) }
+          });
+
+          uploadedMap[blobName] = blockBlobClient.url;
         }
       }
     };
 
-    walk(folderPath);
-
-    // Actually upload to UploadThing
-    const response = await utapi.uploadFiles(files); 
-
-    // Create a mapping of fileName -> URL
-    const uploadedMap = {};
-    response.forEach((r, index) => {
-      if (r.data) {
-        uploadedMap[fileNames[index]] = r.data.url;
-      }
-    });
-
+    await walk(folderPath);
     return uploadedMap;
   } catch (error) {
-    console.error("UploadThing upload error:", error);
+    console.error("Azure Blob Storage upload error:", error);
     throw error;
   }
 };
 
-// Utility for MIME detection
 const getMimeType = (file) => {
   if (file.endsWith(".ts")) return "video/mp2t";
   if (file.endsWith(".m3u8")) return "application/vnd.apple.mpegurl";

@@ -1,8 +1,8 @@
 import { processVideo } from "../utils/videoProcessor.js";
 import { Video } from "../models/video.model.js";
-import { ApiError } from "../utils/ApiError.js";
+import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/AsyncHandler.js";
 
 const uploadHLSVideo = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, "Video file is required");
