@@ -1,21 +1,22 @@
-// Hinglish code:
-
 import { spawn } from "child_process";
 
-export const getVideoDuration = (inputBuffer) => {
+export const getVideoDuration = (inputPath) => {
   return new Promise((resolve, reject) => {
     const ff = spawn("ffprobe", [
-      "-v", "error",
-      "-show_entries", "format=duration",
-      "-of", "default=noprint_wrappers=1:nokey=1",
-      "pipe:0"
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      inputPath,
     ]);
 
     let output = "";
     let errorOutput = "";
-    
-    ff.stdout.on("data", d => output += d.toString());
-    ff.stderr.on("data", d => errorOutput += d.toString());
+
+    ff.stdout.on("data", (d) => (output += d.toString()));
+    ff.stderr.on("data", (d) => (errorOutput += d.toString()));
 
     ff.on("close", (code) => {
       if (code === 0) {
@@ -34,8 +35,5 @@ export const getVideoDuration = (inputBuffer) => {
     ff.on("error", (err) => {
       reject(new Error(`FFprobe process error: ${err.message}`));
     });
-
-    ff.stdin.write(inputBuffer);
-    ff.stdin.end();
   });
 };

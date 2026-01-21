@@ -13,7 +13,7 @@ const uploadHLSVideo = asyncHandler(async (req, res) => {
   try {
     // 1. Process Video (universal function)
     const { videoId, masterUrl, variants, thumbnailUrl, duration } =
-      await processVideo(req.file.buffer);
+      await processVideo(req.file.path);
 
     if (!masterUrl || !variants) {
       throw new ApiError(500, "Video processing pipeline failed");
@@ -25,7 +25,7 @@ const uploadHLSVideo = asyncHandler(async (req, res) => {
       variants,
       thumbnail: thumbnailUrl,
       title: title || "Untitled Video",
-      description: description || "No description", 
+      description: description || "No description",
       duration,
       segmentsBasePath: videoId,
       owner,

@@ -3,11 +3,11 @@ import fs from "fs";
 import path from "path";
 import { hasAudioTrack } from "./ffprobe.js";
 
-export const generateHLS = async (inputBuffer, videoId) => {
+export const generateHLS = async (inputPath, videoId) => {
   const baseFolder = path.join("temp", videoId);
   fs.mkdirSync(baseFolder, { recursive: true });
 
-  const audioExists = await hasAudioTrack(inputBuffer);
+  const audioExists = await hasAudioTrack(inputPath);
 
   const variants = [
     {
@@ -42,7 +42,7 @@ export const generateHLS = async (inputBuffer, videoId) => {
 
   const ffArgs = [
     "-i",
-    "pipe:0",
+    inputPath,
     "-preset",
     "veryfast",
     "-g",
@@ -92,12 +92,6 @@ export const generateHLS = async (inputBuffer, videoId) => {
     const ff = spawn("ffmpeg", ffArgs);
     let errorOutput = "";
 
-    try {
-      ff.stdin.write(inputBuffer);
-      ff.stdin.end();
-    } catch (e) {
-      if (e.code !== "EPIPE" && e.code !== "EOF") console.error(e);
-    }
     ff.stderr.on("data", (d) => (errorOutput += d.toString()));
 
     ff.on("close", (code) => {
