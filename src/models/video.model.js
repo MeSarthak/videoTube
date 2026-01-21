@@ -3,20 +3,28 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const videoSchema = new Schema(
   {
-    masterPlaylist: { type: String, required: true }, // master.m3u8
-    variants: [{ type: String, required: true }],
-    thumbnail: { type: String, required: true },
-    title: { type: String, required: true, trim: true, index: true },
-    description: { type: String, trim: true },
-    duration: { type: Number, required: true },
-    segmentsBasePath: { type: String, required: true }, // upload folder root
+    duration: { type: Number }, // Not required initially
+    segmentsBasePath: { type: String }, // Not required initially
+    masterPlaylist: { type: String }, // Not required initially
+    variants: [{ type: String }],
+    thumbnail: { type: String },
+
     views: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: true },
-    processingStatus: {
+
+    // Status tracking
+    status: {
       type: String,
-      enum: ["processing", "ready", "failed"],
-      default: "ready",
+      enum: ["pending", "processing", "published", "failed"],
+      default: "pending",
     },
+    uploadStatus: {
+      type: String,
+      enum: ["pending", "processing", "completed", "failed"],
+      default: "pending",
+    },
+    errorMessage: { type: String },
+
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

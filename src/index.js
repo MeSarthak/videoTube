@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import connectDB from "./db/index.js";
 import app from "./app.js";
 import fs from "fs";
+import "./workers/video.worker.js"; // Import worker to start processing jobs
 
 dotenv.config({
   path: "./.env",
