@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 
 export const generateThumbnail = async (inputPath, videoId) => {
-  const outDir = path.join("temp", videoId);
+  const outDir = path.join("public", "temp", videoId);
   fs.mkdirSync(outDir, { recursive: true });
   const thumbPath = path.join(outDir, "thumb.jpg");
 

@@ -2,14 +2,17 @@ import fs from "fs";
 import path from "path";
 import { BlobServiceClient } from "@azure/storage-blob";
 
-const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+const connectionString =
+  process.env.AZURE_STORAGE_CONNECTION_STRING ||
+  "DefaultEndpointsProtocol=https;AccountName=placeholder;AccountKey=placeholder;EndpointSuffix=core.windows.net";
 if (!connectionString) {
   throw new Error(
     "AZURE_STORAGE_CONNECTION_STRING environment variable is not set"
   );
 }
 
-const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+const blobServiceClient =
+  BlobServiceClient.fromConnectionString(connectionString);
 
 const containerName = process.env.CONTAINER_NAME || "videos";
 
@@ -27,13 +30,15 @@ export const uploadHLSFolder = async (folderPath, videoId) => {
           await walk(fullPath);
         } else {
           const buffer = fs.readFileSync(fullPath);
-          const relativePath = path.relative(folderPath, fullPath).replace(/\\/g, '/');
+          const relativePath = path
+            .relative(folderPath, fullPath)
+            .replace(/\\/g, "/");
           const blobName = `${videoId}/${relativePath}`;
 
           // Upload to Azure Blob Storage
           const blockBlobClient = containerClient.getBlockBlobClient(blobName);
           await blockBlobClient.upload(buffer, buffer.length, {
-            blobHTTPHeaders: { blobContentType: getMimeType(relativePath) }
+            blobHTTPHeaders: { blobContentType: getMimeType(relativePath) },
           });
 
           uploadedMap[blobName] = blockBlobClient.url;

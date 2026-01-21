@@ -4,7 +4,7 @@ import path from "path";
 import { hasAudioTrack } from "./ffprobe.js";
 
 export const generateHLS = async (inputPath, videoId) => {
-  const baseFolder = path.join("temp", videoId);
+  const baseFolder = path.join("public", "temp", videoId);
   fs.mkdirSync(baseFolder, { recursive: true });
 
   const audioExists = await hasAudioTrack(inputPath);
