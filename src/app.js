@@ -24,7 +24,7 @@ import { videoRouter  } from "./routes/video.routes.js";
 
 //use routes
 
-app.use("/health-check", (req, res) => {
+app.use("/", (req, res) => {
     res.status(200).json({
         statusCode: 200,
         message: "API is running...",
