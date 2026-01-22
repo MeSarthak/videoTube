@@ -147,6 +147,69 @@ POST /users/login
 }
 ```
 
+## Dashboard (`/dashboard`)
+
+| Method | Endpoint            | Description                              | Auth Required |
+| :----- | :------------------ | :--------------------------------------- | :------------ |
+| `GET`  | `/dashboard/stats`  | Get total views, subs, videos, and likes | Yes           |
+| `GET`  | `/dashboard/videos` | Get all videos uploaded by channel       | Yes           |
+
+### Sample: Get Stats
+
+**Request:**
+`GET /dashboard/stats`
+
+**Response:**
+
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "totalVideos": 10,
+    "totalViews": 5000,
+    "totalSubscribers": 150,
+    "totalLikes": 400
+  },
+  "message": "Channel stats fetched successfully",
+  "success": true
+}
+```
+
+## Tweets / Community (`/tweets`)
+
+| Method   | Endpoint               | Description                 | Auth Required |
+| :------- | :--------------------- | :-------------------------- | :------------ |
+| `POST`   | `/tweets`              | Create a new community post | Yes           |
+| `GET`    | `/tweets/user/:userId` | Get user's tweets           | Yes           |
+| `PATCH`  | `/tweets/:tweetId`     | Update a tweet              | Yes           |
+| `DELETE` | `/tweets/:tweetId`     | Delete a tweet              | Yes           |
+
+### Sample: Create Tweet
+
+**Request:**
+
+```json
+POST /tweets
+{
+  "content": "Hello community! New video coming soon."
+}
+```
+
+**Response:**
+
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "_id": "65f5...",
+    "content": "Hello community! New video coming soon.",
+    "owner": "65f2..."
+  },
+  "message": "Tweet created successfully",
+  "success": true
+}
+```
+
 ## Playlists (`/playlists`)
 
 | Method   | Endpoint                                 | Description                | Auth Required |

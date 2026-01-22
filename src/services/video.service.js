@@ -11,7 +11,7 @@ class VideoService {
     try {
       // 1. Create initial DB entry with "pending" status
       const video = await Video.create({
-        title: title ,
+        title: title,
         description: description || "No description",
         owner: ownerId,
         status: "pending",
@@ -228,6 +228,13 @@ class VideoService {
 
     if (!videoAggregation?.length) {
       throw new ApiError(404, "Video not found");
+    }
+
+    // Add to Watch History if user is authenticated
+    if (currentUserId) {
+      await User.findByIdAndUpdate(currentUserId, {
+        $addToSet: { watchHistory: videoId }, // Prevent duplicates with $addToSet
+      });
     }
 
     return videoAggregation[0];
