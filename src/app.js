@@ -33,6 +33,9 @@ app.use(cookieParser());
 //import routes
 import { userRouter } from "./routes/user.routes.js";
 import { videoRouter } from "./routes/video.routes.js";
+import { subscriptionRouter } from "./routes/subscription.routes.js";
+import { likeRouter } from "./routes/like.routes.js";
+import { commentRouter } from "./routes/comment.routes.js";
 
 //use routes
 
@@ -45,6 +48,9 @@ app.use("/health-check", (req, res) => {
 });
 app.use("/api/v1/users", userRouter); //http://localhost:5000/api/v1/users/....
 app.use("/api/v1/videos", videoRouter); //http://localhost:5000/api/v1/videos/....
+app.use("/api/v1/subscriptions", subscriptionRouter);
+app.use("/api/v1/likes", likeRouter);
+app.use("/api/v1/comments", commentRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

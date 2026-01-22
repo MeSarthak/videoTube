@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon -r dotenv/config src/index.js",
     "build": "echo 'Build complete'",
-    "start": "node -r dotenv/config src/index.js"
+    "start": "node -r dotenv/config src/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [
     "javascript",
@@ -16,8 +17,11 @@
   "author": "Sarthak Singh Choudhary",
   "license": "ISC",
   "devDependencies": {
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.1.11",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "supertest": "^7.2.2"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.30.0",

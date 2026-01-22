@@ -3,6 +3,8 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const videoSchema = new Schema(
   {
+    title: { type: String, required: true, index: true },
+    description: { type: String, required: true },
     duration: { type: Number }, // Not required initially
     segmentsBasePath: { type: String }, // Not required initially
     masterPlaylist: { type: String }, // Not required initially
