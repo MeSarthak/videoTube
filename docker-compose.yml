@@ -15,7 +15,10 @@ services:
       retries: 5
 
   app:
-    image: sarthakregistry.azurecr.io/videotube:1.0.4
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sarthaksinghchoudhary/videotube:test
     container_name: videotube
     ports:
       - "8000:8000"
