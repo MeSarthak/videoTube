@@ -5,12 +5,26 @@ import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import fs from "fs";
 
-const connection = new Redis(
-  process.env.REDIS_URL || "redis://localhost:6379",
-  {
-    maxRetriesPerRequest: null,
-  }
-);
+const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const isSecure = redisUrl.startsWith("rediss://");
+
+const connection = new Redis(redisUrl, {
+  maxRetriesPerRequest: null,
+  connectTimeout: 20000,
+  retryStrategy: function (times) {
+    return Math.min(times * 100, 3000); // Increased retry delay slightly
+  },
+  tls: isSecure
+    ? {
+        servername: new URL(redisUrl).hostname,
+        rejectUnauthorized: false,
+      }
+    : undefined,
+});
+
+connection.on("error", (err) => {
+  console.error(`[Worker] Redis connection error: ${err.message}`);
+});
 
 const worker = new Worker(
   "video-processing",
