@@ -15,7 +15,7 @@ services:
       retries: 5
 
   app:
-    image: sarthakregistry.azurecr.io/videotube:1.0.3
+    image: sarthakregistry.azurecr.io/videotube:1.0.4
     container_name: videotube
     ports:
       - "8000:8000"

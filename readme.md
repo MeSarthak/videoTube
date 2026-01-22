@@ -147,6 +147,46 @@ POST /users/login
 }
 ```
 
+## Playlists (`/playlists`)
+
+| Method   | Endpoint                                 | Description                | Auth Required |
+| :------- | :--------------------------------------- | :------------------------- | :------------ |
+| `POST`   | `/playlists`                             | Create a new playlist      | Yes           |
+| `GET`    | `/playlists/:playlistId`                 | Get playlist by ID         | Yes           |
+| `PATCH`  | `/playlists/:playlistId`                 | Update playlist details    | Yes           |
+| `DELETE` | `/playlists/:playlistId`                 | Delete a playlist          | Yes           |
+| `PATCH`  | `/playlists/add/:videoId/:playlistId`    | Add video to playlist      | Yes           |
+| `PATCH`  | `/playlists/remove/:videoId/:playlistId` | Remove video from playlist | Yes           |
+| `GET`    | `/playlists/user/:userId`                | Get user's playlists       | Yes           |
+
+### Sample: Create Playlist
+
+**Request:**
+
+```json
+POST /playlists
+{
+  "name": "My Favorites",
+  "description": "Best videos ever"
+}
+```
+
+**Response:**
+
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "_id": "65f4...",
+    "name": "My Favorites",
+    "owner": "65f2...",
+    "videos": []
+  },
+  "message": "Playlist created successfully",
+  "success": true
+}
+```
+
 ## Subscriptions (`/subscriptions`)
 
 | Method | Endpoint                         | Description                         | Auth Required |
