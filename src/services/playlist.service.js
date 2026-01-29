@@ -87,18 +87,26 @@ class PlaylistService {
       );
     }
 
-    const video = await Video.findById(videoId);
-    if (!video) throw new ApiError(404, "Video not found");
+    // Atomic update to prevent duplicates
+    const updatedPlaylist = await Playlist.findOneAndUpdate(
+      {
+        _id: playlistId,
+        videos: { $ne: videoId }, // Ensure video is not already in the array
+      },
+      {
+        $addToSet: { videos: videoId },
+      },
+      { new: true }
+    );
 
-    // Prevent duplicates
-    if (playlist.videos.includes(videoId)) {
+    if (!updatedPlaylist) {
+      // If null, it means either playlist doesn't exist (handled above) or video was already there
+      // We can re-fetch or return the existing one.
+      // But since we checked existence above, it likely means the video was already there.
       throw new ApiError(400, "Video already exists in this playlist");
     }
 
-    playlist.videos.push(videoId);
-    await playlist.save();
-
-    return playlist;
+    return updatedPlaylist;
   }
 
   async removeVideoFromPlaylist(playlistId, videoId, userId) {

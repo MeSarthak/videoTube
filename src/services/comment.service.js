@@ -1,5 +1,7 @@
 import { Comment } from "../models/comment.model.js";
+import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
+import { notificationService } from "./notification.service.js";
 import mongoose from "mongoose";
 
 class CommentService {
@@ -46,11 +48,25 @@ class CommentService {
   async addComment(videoId, userId, content) {
     if (!content) throw new ApiError(400, "Content is required");
 
+    const video = await Video.findById(videoId);
+    if (!video) throw new ApiError(404, "Video not found");
+
     const comment = await Comment.create({
       content,
       video: videoId,
       owner: userId,
     });
+
+    // Notify Video Owner
+    // Re-fetching video is not needed since we fetched it above for validation
+    if (video) {
+      await notificationService.createNotification({
+        recipient: video.owner,
+        sender: userId,
+        type: "COMMENT",
+        referenceId: videoId, // Link to video where comment happened
+      });
+    }
 
     return comment;
   }

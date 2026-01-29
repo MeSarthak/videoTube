@@ -92,7 +92,13 @@ export const generateHLS = async (inputPath, videoId) => {
     const ff = spawn("ffmpeg", ffArgs);
     let errorOutput = "";
 
-    ff.stderr.on("data", (d) => (errorOutput += d.toString()));
+    ff.stderr.on("data", (d) => {
+      // Prevent memory leaks by limiting error log size (keep last ~2KB)
+      if (errorOutput.length > 2000) {
+        errorOutput = errorOutput.slice(-2000);
+      }
+      errorOutput += d.toString();
+    });
 
     ff.on("close", (code) => {
       if (code === 0) {

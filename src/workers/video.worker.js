@@ -40,8 +40,9 @@ const worker = new Worker(
       });
 
       // 1. Process Video
+      // Pass videoId so the processor uses the same ID as the database record
       const { masterUrl, variants, thumbnailUrl, duration } =
-        await processVideo(videoPath);
+        await processVideo(videoPath, videoId);
 
       if (!masterUrl || !variants) {
         throw new Error("Video processing pipeline failed");

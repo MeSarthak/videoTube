@@ -3,12 +3,25 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { videoService } from "../services/video.service.js";
 
 const uploadHLSVideo = asyncHandler(async (req, res) => {
+  console.log("Upload request received");
+  console.log("req.files:", req.files);
+  console.log("req.file:", req.file);
+  console.log("req.body:", req.body);
+
   const ownerId = req.user._id;
   const { title, description } = req.body;
-  const file = req.file;
+
+  // Handle both single file (video only) and fields (video + thumbnail) uploads
+  const file = req.files?.video ? req.files.video[0] : req.file;
+  const thumbnail = req.files?.thumbnail ? req.files.thumbnail[0] : null;
+
+  if (!file) {
+    throw new Error("Video file is required");
+  }
 
   const video = await videoService.uploadHLSVideo({
     file,
+    thumbnail, // Pass thumbnail (can be null)
     title,
     description,
     ownerId,
@@ -38,7 +51,18 @@ const getVideoStatus = asyncHandler(async (req, res) => {
 });
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    query,
+    sortBy,
+    sortType,
+    userId,
+    tags,
+    uploadDate,
+    durationMin,
+    durationMax,
+  } = req.query;
 
   const result = await videoService.getAllVideos({
     page,
@@ -47,6 +71,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
     sortBy,
     sortType,
     userId,
+    tags,
+    uploadDate,
+    durationMin,
+    durationMax,
   });
 
   return res
@@ -68,6 +96,17 @@ const getVideoById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video details fetched successfully"));
 });
 
+const getRelatedVideos = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  const { limit } = req.query;
+
+  const videos = await videoService.getRelatedVideos(videoId, limit);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, videos, "Related videos fetched successfully"));
+});
+
 const incrementViewCount = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
@@ -83,5 +122,6 @@ export {
   getVideoStatus,
   getAllVideos,
   getVideoById,
+  getRelatedVideos,
   incrementViewCount,
 };

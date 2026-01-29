@@ -6,8 +6,9 @@ import { getVideoDuration } from "../utils/duration.js";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 
-const processVideo = async (videoPath) => {
-  const videoId = uuidv4();
+const processVideo = async (videoPath, existingVideoId) => {
+  // Use existing ID if provided, otherwise generate new (fallback)
+  const videoId = existingVideoId || uuidv4();
   let baseFolder;
 
   try {

@@ -1,20 +1,54 @@
 import fs from "fs";
 import path from "path";
-import { BlobServiceClient } from "@azure/storage-blob";
+import {
+  BlobServiceClient,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+  StorageSharedKeyCredential,
+} from "@azure/storage-blob";
 
-const connectionString =
-  process.env.AZURE_STORAGE_CONNECTION_STRING ||
-  "DefaultEndpointsProtocol=https;AccountName=placeholder;AccountKey=placeholder;EndpointSuffix=core.windows.net";
+const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
 if (!connectionString) {
   throw new Error(
     "AZURE_STORAGE_CONNECTION_STRING environment variable is not set"
   );
 }
 
+// Parse connection string manually to get account name and key for SAS generation
+const matches = connectionString.match(
+  /AccountName=([^;]+);AccountKey=([^;]+)/
+);
+const accountName = matches ? matches[1] : "";
+const accountKey = matches ? matches[2] : "";
+
 const blobServiceClient =
   BlobServiceClient.fromConnectionString(connectionString);
 
 const containerName = process.env.CONTAINER_NAME || "videos";
+const isSecure = connectionString.includes("https"); // Basic check, Azure usually enforces HTTPS
+
+const generateSASToken = (containerName, blobName) => {
+  if (!accountName || !accountKey) return "";
+
+  const sharedKeyCredential = new StorageSharedKeyCredential(
+    accountName,
+    accountKey
+  );
+  const sasOptions = {
+    containerName,
+    blobName,
+    permissions: BlobSASPermissions.parse("r"), // Read-only
+    startsOn: new Date(new Date().valueOf() - 15 * 60 * 1000), // Start 15 mins ago to be safe
+    expiresOn: new Date(new Date().valueOf() + 3600 * 1000 * 24 * 7), // 7 days (increased from 24h)
+    protocol: isSecure ? "https" : "https,http",
+  };
+
+  const sasToken = generateBlobSASQueryParameters(
+    sasOptions,
+    sharedKeyCredential
+  ).toString();
+  return sasToken;
+};
 
 export const uploadHLSFolder = async (folderPath, videoId) => {
   try {
@@ -41,7 +75,9 @@ export const uploadHLSFolder = async (folderPath, videoId) => {
             blobHTTPHeaders: { blobContentType: getMimeType(relativePath) },
           });
 
-          uploadedMap[blobName] = blockBlobClient.url;
+          // Append SAS Token to the URL
+          const sasToken = generateSASToken(containerName, blobName);
+          uploadedMap[blobName] = `${blockBlobClient.url}?${sasToken}`;
         }
       }
     };
@@ -55,8 +91,8 @@ export const uploadHLSFolder = async (folderPath, videoId) => {
 };
 
 const getMimeType = (file) => {
-  if (file.endsWith(".ts")) return "video/mp2t";
-  if (file.endsWith(".m3u8")) return "application/vnd.apple.mpegurl";
+  if (file.endsWith(".ts")) return "video/MP2T";
+  if (file.endsWith(".m3u8")) return "application/x-mpegURL";
   if (file.endsWith(".jpg")) return "image/jpeg";
   return "application/octet-stream";
 };

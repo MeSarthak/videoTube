@@ -28,6 +28,14 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Range"
+  );
+  next();
+});
 app.use(cookieParser());
 
 //import routes
@@ -39,6 +47,7 @@ import { commentRouter } from "./routes/comment.routes.js";
 import { playlistRouter } from "./routes/playlist.routes.js";
 import { tweetRouter } from "./routes/tweet.routes.js";
 import { dashboardRouter } from "./routes/dashboard.routes.js";
+import { notificationRouter } from "./routes/notification.routes.js";
 
 //use routes
 
@@ -57,6 +66,7 @@ app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/playlists", playlistRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+app.use("/api/v1/notifications", notificationRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

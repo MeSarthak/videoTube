@@ -5,6 +5,7 @@ const videoSchema = new Schema(
   {
     title: { type: String, required: true, index: true },
     description: { type: String, required: true },
+    tags: [{ type: String }],
     duration: { type: Number }, // Not required initially
     segmentsBasePath: { type: String }, // Not required initially
     masterPlaylist: { type: String }, // Not required initially

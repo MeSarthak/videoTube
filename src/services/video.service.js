@@ -18,14 +18,20 @@ class VideoService {
         uploadStatus: "pending",
       });
 
-      // 2. Add job to queue
-      await addVideoToQueue({
-        videoPath: file.path,
-        videoId: video._id,
-        userId: ownerId,
-        title: title,
-        description: description,
-      });
+      try {
+        // 2. Add job to queue
+        await addVideoToQueue({
+          videoPath: file.path,
+          videoId: video._id,
+          userId: ownerId,
+          title: title,
+          description: description,
+        });
+      } catch (queueError) {
+        // If queue fails, delete the DB entry to avoid zombie records
+        await Video.findByIdAndDelete(video._id);
+        throw new ApiError(500, "Failed to queue video for processing");
+      }
 
       return video;
     } catch (err) {
@@ -56,6 +62,10 @@ class VideoService {
     sortBy = "createdAt",
     sortType = "desc",
     userId,
+    tags,
+    uploadDate,
+    durationMin,
+    durationMax,
   }) {
     const pipeline = [];
 
@@ -65,23 +75,97 @@ class VideoService {
       status: "published", // Ensure processing is complete
     };
 
+    // Text Search (Title/Description)
     if (query) {
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       matchStage.$or = [
-        { title: { $regex: query, $options: "i" } },
-        { description: { $regex: query, $options: "i" } },
+        { title: { $regex: escapedQuery, $options: "i" } },
+        { description: { $regex: escapedQuery, $options: "i" } },
       ];
     }
 
+    // Owner Filter
     if (userId) {
       matchStage.owner = new mongoose.Types.ObjectId(userId);
     }
 
+    // Tags Filter
+    if (tags) {
+      const tagsArray = tags.split(",").map((tag) => tag.trim());
+      if (tagsArray.length > 0) {
+        matchStage.tags = { $in: tagsArray };
+      }
+    }
+
+    // Duration Filter (in seconds)
+    if (durationMin || durationMax) {
+      matchStage.duration = {};
+      if (durationMin) matchStage.duration.$gte = parseFloat(durationMin);
+      if (durationMax) matchStage.duration.$lte = parseFloat(durationMax);
+    }
+
+    // Upload Date Filter
+    if (uploadDate) {
+      const now = new Date();
+      let startDate;
+
+      switch (uploadDate) {
+        case "today":
+          startDate = new Date(now.setHours(0, 0, 0, 0));
+          break;
+        case "week":
+          startDate = new Date(now.setDate(now.getDate() - 7));
+          break;
+        case "month":
+          startDate = new Date(now.setMonth(now.getMonth() - 1));
+          break;
+        case "year":
+          startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+          break;
+        default:
+          break;
+      }
+
+      if (startDate) {
+        matchStage.createdAt = { $gte: startDate };
+      }
+    }
+
     pipeline.push({ $match: matchStage });
 
-    // 2. Sort
-    const sortStage = {};
-    sortStage[sortBy] = sortType === "desc" ? -1 : 1;
-    pipeline.push({ $sort: sortStage });
+    // 2. Lookup & Sort Strategies
+    if (sortBy === "mostLiked") {
+      // For "mostLiked", we need to count likes first
+      pipeline.push({
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "video",
+          as: "likes",
+        },
+      });
+      pipeline.push({
+        $addFields: {
+          likesCount: { $size: "$likes" },
+        },
+      });
+      pipeline.push({
+        $sort: { likesCount: sortType === "asc" ? 1 : -1 },
+      });
+      // Remove the heavy likes array after sorting to keep payload light
+      pipeline.push({
+        $project: {
+          likes: 0,
+        },
+      });
+    } else {
+      // Standard Sort (createdAt, views, duration)
+      const sortStage = {};
+      // Map 'mostViewed' to 'views' field
+      const sortField = sortBy === "mostViewed" ? "views" : sortBy;
+      sortStage[sortField] = sortType === "desc" ? -1 : 1;
+      pipeline.push({ $sort: sortStage });
+    }
 
     // 3. Lookup Owner Details
     pipeline.push({
@@ -238,6 +322,66 @@ class VideoService {
     }
 
     return videoAggregation[0];
+  }
+
+  /**
+   * Get related videos based on owner and title matching
+   */
+  async getRelatedVideos(videoId, limit = 10) {
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid Video ID");
+    }
+
+    const currentVideo = await Video.findById(videoId);
+    if (!currentVideo) {
+      throw new ApiError(404, "Video not found");
+    }
+
+    // Split title into words for basic keyword matching (exclude short words)
+    const titleWords = currentVideo.title
+      .split(" ")
+      .filter((w) => w.length > 3);
+    const regexPattern = titleWords.join("|"); // "Learn|Javascript|React"
+
+    const relatedVideos = await Video.aggregate([
+      {
+        $match: {
+          $and: [
+            { _id: { $ne: new mongoose.Types.ObjectId(videoId) } }, // Exclude current video
+            { isPublished: true },
+            { status: "published" },
+            {
+              $or: [
+                { owner: currentVideo.owner }, // Same channel
+                { title: { $regex: regexPattern, $options: "i" } }, // Similar title
+              ],
+            },
+          ],
+        },
+      },
+      // Lookup Owner Details
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "ownerDetails",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                fullName: 1,
+                avatar: 1,
+              },
+            },
+          ],
+        },
+      },
+      { $unwind: "$ownerDetails" },
+      { $limit: parseInt(limit) },
+    ]);
+
+    return relatedVideos;
   }
 
   /**

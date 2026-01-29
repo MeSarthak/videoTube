@@ -1,5 +1,6 @@
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
+import { notificationService } from "./notification.service.js";
 import mongoose from "mongoose";
 
 class SubscriptionService {
@@ -10,6 +11,11 @@ class SubscriptionService {
 
     if (channelId.toString() === userId.toString()) {
       throw new ApiError(400, "You cannot subscribe to your own channel");
+    }
+
+    const channel = await mongoose.model("User").findById(channelId);
+    if (!channel) {
+      throw new ApiError(404, "Channel not found");
     }
 
     const existingSubscription = await Subscription.findOne({
@@ -25,6 +31,14 @@ class SubscriptionService {
     await Subscription.create({
       subscriber: userId,
       channel: channelId,
+    });
+
+    // Notify Channel Owner
+    await notificationService.createNotification({
+      recipient: channelId,
+      sender: userId,
+      type: "SUBSCRIBE",
+      referenceId: channelId, // Channel ID serves as reference
     });
 
     return { subscribed: true };
