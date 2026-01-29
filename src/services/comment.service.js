@@ -59,12 +59,13 @@ class CommentService {
 
     // Notify Video Owner
     // Re-fetching video is not needed since we fetched it above for validation
-    if (video) {
+    // Notify Video Owner (skip if commenter is the video owner)
+    if (video.owner.toString() !== userId.toString()) {
       await notificationService.createNotification({
         recipient: video.owner,
         sender: userId,
         type: "COMMENT",
-        referenceId: videoId, // Link to video where comment happened
+        referenceId: videoId,
       });
     }
 

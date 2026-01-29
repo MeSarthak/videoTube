@@ -91,7 +91,7 @@ class VideoService {
 
     // Tags Filter
     if (tags) {
-      const tagsArray = tags.split(",").map((tag) => tag.trim());
+      const tagsArray = tags.split(",").map((tag) => tag.trim()).filter(Boolean);
       if (tagsArray.length > 0) {
         matchStage.tags = { $in: tagsArray };
       }
@@ -343,6 +343,12 @@ class VideoService {
       .filter((w) => w.length > 3);
     const regexPattern = titleWords.join("|"); // "Learn|Javascript|React"
 
+    // Build $or array conditionally
+    const orConditions = [{ owner: currentVideo.owner }]; // Same channel
+    if (titleWords.length > 0) {
+      orConditions.push({ title: { $regex: regexPattern, $options: "i" } }); // Similar title
+    }
+
     const relatedVideos = await Video.aggregate([
       {
         $match: {
@@ -351,10 +357,7 @@ class VideoService {
             { isPublished: true },
             { status: "published" },
             {
-              $or: [
-                { owner: currentVideo.owner }, // Same channel
-                { title: { $regex: regexPattern, $options: "i" } }, // Similar title
-              ],
+              $or: orConditions,
             },
           ],
         },

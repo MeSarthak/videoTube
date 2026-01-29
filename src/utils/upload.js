@@ -15,11 +15,22 @@ if (!connectionString) {
 }
 
 // Parse connection string manually to get account name and key for SAS generation
-const matches = connectionString.match(
-  /AccountName=([^;]+);AccountKey=([^;]+)/
-);
-const accountName = matches ? matches[1] : "";
-const accountKey = matches ? matches[2] : "";
+const parseConnectionString = (connStr) => {
+  const parts = connStr.split(';').reduce((acc, part) => {
+    const [key, ...valueParts] = part.split('=');
+    if (key) acc[key] = valueParts.join('=');
+    return acc;
+  }, {});
+  return parts;
+};
+
+const connStringParts = parseConnectionString(connectionString);
+const accountName = connStringParts.AccountName || "";
+const accountKey = connStringParts.AccountKey || "";
+
+if (!accountName || !accountKey) {
+  throw new Error("Failed to parse AccountName or AccountKey from connection string");
+}
 
 const blobServiceClient =
   BlobServiceClient.fromConnectionString(connectionString);

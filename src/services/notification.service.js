@@ -50,7 +50,7 @@ class NotificationService {
         },
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: { updatedAt: -1 },
       },
       // Lookup Sender details
       {

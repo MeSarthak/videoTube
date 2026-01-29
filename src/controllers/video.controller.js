@@ -16,7 +16,7 @@ const uploadHLSVideo = asyncHandler(async (req, res) => {
   const thumbnail = req.files?.thumbnail ? req.files.thumbnail[0] : null;
 
   if (!file) {
-    throw new Error("Video file is required");
+    throw new ApiError(400, "Video file is required");
   }
 
   const video = await videoService.uploadHLSVideo({

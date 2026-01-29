@@ -9,14 +9,15 @@ This project is a scalable video streaming platform backend built with Node.js, 
 - Node.js (v18+)
 - MongoDB (Local or Atlas)
 - Redis (Local or Cloud)
-- Cloudinary Account (for image/video storage)
+- Cloudinary Account (for images)
+- Azure Blob Storage Account (for videos)
 
 ### Installation
 
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/your-username/videotube-backend.git
+    git clone https://github.com/MeSarthak/videotube-backend.git  
     cd videotube-backend
     ```
 
@@ -30,14 +31,17 @@ This project is a scalable video streaming platform backend built with Node.js, 
 
     ```env
     PORT=8000
-    MONGODB_URI=mongodb://localhost:27017
-    CORS_ORIGIN=*
+    MONGODB_URI=mongodb://localhost:27017/videotube
+    # ⚠️ In production, replace '*' with your specific frontend domain(s)
+    # ⚠️ SECURITY: Generate strong random secrets for production (use: openssl rand -base64 32)
     ACCESS_TOKEN_SECRET=your_access_token_secret
     ACCESS_TOKEN_EXPIRY=1d
     REFRESH_TOKEN_SECRET=your_refresh_token_secret
     REFRESH_TOKEN_EXPIRY=10d
+    # Get these from your Cloudinary dashboard
     CLOUDINARY_CLOUD_NAME=your_cloud_name
     CLOUDINARY_API_KEY=your_api_key
+    CLOUDINARY_API_SECRET=your_api_secret
     CLOUDINARY_API_SECRET=your_api_secret
     REDIS_URL=redis://localhost:6379
     ```
@@ -52,6 +56,35 @@ This project is a scalable video streaming platform backend built with Node.js, 
 ## 📡 API Endpoints
 
 All API routes are prefixed with `/api/v1`.
+
+**Auth Legend:**
+- ✅ Authentication required
+- ❌ No authentication required
+- ⚠️ Authentication optional (provides additional data/features when authenticated)
+
+#### Authentication
+
+Protected routes (marked with ✅) require an access token. To authenticate:
+
+1. **Obtain tokens:** Login via `POST /api/v1/users/login` with your credentials. The response includes:
+   - `accessToken` - Short-lived token for API requests
+   - `refreshToken` - Long-lived token to obtain new access tokens
+
+2. **Send access token:** Include the access token in the `Authorization` header for all protected endpoints:
+   ```
+   Authorization: Bearer <access_token>
+   ```
+
+3. **Refresh tokens:** When the access token expires, use `POST /api/v1/users/refresh-token` with your refresh token (sent via cookie or request body) to get a new access token.
+
+**Protected endpoints include:**
+- All `/users/*` routes except `/register`, `/login`, and `/refresh-token`
+- Video upload and status: `/videos/upload-abr`, `/videos/status/:videoId`
+- All `/dashboard/*` routes
+- All `/tweets/*`, `/playlists/*`, `/subscriptions/*`, `/likes/*`, and `/comments/*` routes
+- `/notifications/*` routes
+
+**Optional authentication (⚠️):** Some endpoints like `/videos/:videoId` work without authentication but provide additional data when authenticated (e.g., user's like status, watch history).
 
 ### 1. Authentication (`/users`)
 

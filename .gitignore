@@ -1,7 +1,6 @@
 # Public temp files
 public/temp/*
 !public/temp/.gitkeep
-test
 
 # Logs
 logs
@@ -78,7 +77,7 @@ web_modules/
 .env
 .env.test
 .env.production
-
+.env.docker
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

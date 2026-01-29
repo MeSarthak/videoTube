@@ -29,7 +29,8 @@ class LikeService {
 
     // Notify Video Owner
     // Video is already fetched above for validation
-    if (video) {
+    // Skip notification if user likes their own video
+    if (!video.owner.equals(userId)) {
       await notificationService.createNotification({
         recipient: video.owner,
         sender: userId,
@@ -64,7 +65,8 @@ class LikeService {
 
     // Notify Comment Owner
     // Comment already fetched above
-    if (comment) {
+    // Skip notification if user likes their own comment
+    if (!comment.owner.equals(userId)) {
       await notificationService.createNotification({
         recipient: comment.owner,
         sender: userId,
