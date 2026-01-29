@@ -17,7 +17,7 @@ This project is a scalable video streaming platform backend built with Node.js, 
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/MeSarthak/videotube-backend.git  
+    git clone https://github.com/MeSarthak/videotube-backend.git
     cd videotube-backend
     ```
 
@@ -58,6 +58,7 @@ This project is a scalable video streaming platform backend built with Node.js, 
 All API routes are prefixed with `/api/v1`.
 
 **Auth Legend:**
+
 - ✅ Authentication required
 - ❌ No authentication required
 - ⚠️ Authentication optional (provides additional data/features when authenticated)
@@ -71,6 +72,7 @@ Protected routes (marked with ✅) require an access token. To authenticate:
    - `refreshToken` - Long-lived token to obtain new access tokens
 
 2. **Send access token:** Include the access token in the `Authorization` header for all protected endpoints:
+
    ```
    Authorization: Bearer <access_token>
    ```
@@ -78,6 +80,7 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 3. **Refresh tokens:** When the access token expires, use `POST /api/v1/users/refresh-token` with your refresh token (sent via cookie or request body) to get a new access token.
 
 **Protected endpoints include:**
+
 - All `/users/*` routes except `/register`, `/login`, and `/refresh-token`
 - Video upload and status: `/videos/upload-abr`, `/videos/status/:videoId`
 - All `/dashboard/*` routes
@@ -176,6 +179,12 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 | `PATCH` | `/notifications/:id/read`      | Mark a notification as read       | ✅   | -                      |
 | `PATCH` | `/notifications/mark-all-read` | Mark all notifications as read    | ✅   | -                      |
 
+### 10. Health Check (`/health-check`)
+
+| Method | Endpoint        | Description         | Auth |
+| :----- | :-------------- | :------------------ | :--- |
+| `GET`  | `/health-check` | Check system health | ❌   |
+
 ---
 
 ## 📦 Data Structures (Responses)
@@ -214,6 +223,6 @@ The API uses a standardized response format for all requests:
 - **Caching/Queues:** Redis (BullMQ)
 - **Storage:** Cloudinary (Images), Azure Blob Storage (Videos)
 - **Video Processing:** FFmpeg (HLS Transcoding)
+- **Testing:** Jest, Supertest
 
 ---
-
