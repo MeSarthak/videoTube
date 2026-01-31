@@ -29,7 +29,6 @@ app.use(
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Range"
@@ -48,6 +47,7 @@ import { playlistRouter } from "./routes/playlist.routes.js";
 import { tweetRouter } from "./routes/tweet.routes.js";
 import { dashboardRouter } from "./routes/dashboard.routes.js";
 import { notificationRouter } from "./routes/notification.routes.js";
+import { sasTokenRouter } from "./routes/sas-token.routes.js";
 
 //use routes
 
@@ -60,6 +60,7 @@ app.use("/health-check", (req, res) => {
 });
 app.use("/api/v1/users", userRouter); //http://localhost:5000/api/v1/users/....
 app.use("/api/v1/videos", videoRouter); //http://localhost:5000/api/v1/videos/....
+app.use("/api/v1/sas-tokens", sasTokenRouter); //http://localhost:5000/api/v1/sas-tokens/....
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/likes", likeRouter);
 app.use("/api/v1/comments", commentRouter);

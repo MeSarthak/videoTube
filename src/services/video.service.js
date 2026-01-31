@@ -3,6 +3,11 @@ import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { addVideoToQueue } from "../queues/video.queue.js";
+import { sasTokenService } from "./sas-token.service.js";
+import {
+  withCloudRetry,
+  createCloudErrorResponse,
+} from "../utils/cloudErrorHandler.js";
 
 class VideoService {
   async uploadHLSVideo({ file, title, description, ownerId }) {
@@ -91,7 +96,10 @@ class VideoService {
 
     // Tags Filter
     if (tags) {
-      const tagsArray = tags.split(",").map((tag) => tag.trim()).filter(Boolean);
+      const tagsArray = tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
       if (tagsArray.length > 0) {
         matchStage.tags = { $in: tagsArray };
       }
@@ -204,7 +212,7 @@ class VideoService {
   }
 
   /**
-   * Get video by ID with owner details and like/sub status
+   * Get video by ID with owner details, like/sub status, and SAS URLs
    */
   async getVideoById(videoId, currentUserId) {
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
@@ -314,6 +322,45 @@ class VideoService {
       throw new ApiError(404, "Video not found");
     }
 
+    const video = videoAggregation[0];
+
+    // Add SAS URLs for cloud access
+    try {
+      if (video.masterPlaylist) {
+        const masterPlaylistSAS = await withCloudRetry(() =>
+          Promise.resolve(
+            sasTokenService.generateHLSPlaylistSASUrl(video.masterPlaylist, {
+              expiresInSeconds: 24 * 60 * 60, // 24 hours for streaming
+            })
+          )
+        );
+        video.masterPlaylistSAS = {
+          url: masterPlaylistSAS.sasUrl,
+          expiresAt: masterPlaylistSAS.expiresAt,
+          permissions: masterPlaylistSAS.permissions,
+        };
+      }
+
+      if (video.thumbnail) {
+        const thumbnailSAS = await withCloudRetry(() =>
+          Promise.resolve(
+            sasTokenService.generateReadSASUrl(video.thumbnail, {
+              expiresInSeconds: 24 * 60 * 60, // 24 hours for thumbnail
+            })
+          )
+        );
+        video.thumbnailSAS = {
+          url: thumbnailSAS.sasUrl,
+          expiresAt: thumbnailSAS.expiresAt,
+          permissions: thumbnailSAS.permissions,
+        };
+      }
+    } catch (error) {
+      console.error("Error generating SAS URLs for video:", error);
+      // Don't fail the entire request if SAS generation fails
+      // Frontend can fall back to requesting tokens separately
+    }
+
     // Add to Watch History if user is authenticated
     if (currentUserId) {
       await User.findByIdAndUpdate(currentUserId, {
@@ -321,7 +368,7 @@ class VideoService {
       });
     }
 
-    return videoAggregation[0];
+    return video;
   }
 
   /**
