@@ -1,4 +1,4 @@
-import { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions } from require("@azure/storage-blob");
+import { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } from "@azure/storage-blob";
 
 /**
  * Generates a fresh SAS URL valid for 24 hours
@@ -39,8 +39,6 @@ export async function getRefreshableBlobUrl(blobName) {
  */
 export function generateSASTokenFromKey() {
   try {
-    const { StorageSharedKeyCredential } = require("@azure/storage-blob");
-    
     const accountName = process.env.STORAGE_ACCOUNT_NAME;
     const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
     const containerName = process.env.CONTAINER_NAME || "videos";
