@@ -45,7 +45,7 @@ export const mapAzureErrorToCloudError = (error) => {
   const errorCode = error.code?.toLowerCase() || "";
 
   // Blob not found
-  if (errorCode.includes("notfound") || errorMessage.includes("not found")) {
+  if ((errorCode.includes("notfound") || errorMessage.includes("not found")) && !errorCode.includes("container")) {
     return {
       code: CloudErrorCodes.BLOB_NOT_FOUND,
       message: "The requested blob was not found. It may have been deleted.",
@@ -72,7 +72,7 @@ export const mapAzureErrorToCloudError = (error) => {
 
   // Container not found
   if (
-    errorCode.includes("containername") ||
+    errorCode.includes("containernotfound") || errorCode.includes("containername") ||
     errorMessage.includes("container not found")
   ) {
     return {

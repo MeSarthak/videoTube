@@ -130,7 +130,9 @@ class SASTokenService {
   generateWriteSASUrl(blobName, options = {}) {
     try {
       // Write tokens should have shorter expiration for security
-      const expiresInSeconds = options.expiresInSeconds || 15 * 60; // 15 minutes default
+      let expiresInSeconds = options.expiresInSeconds || 15 * 60; // 15 minutes default
+      const maxExpirySeconds = 24 * 60 * 60; // 24 hours max
+      expiresInSeconds = Math.min(expiresInSeconds, maxExpirySeconds);
       const container = options.container || this.containerName;
 
       if (!blobName) {
