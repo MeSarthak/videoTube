@@ -1,9 +1,20 @@
 import { jest } from "@jest/globals";
 
-// Mock the queue module to prevent Redis connection side-effects
+// Mock modules to prevent side-effects during testing
 jest.unstable_mockModule("../src/queues/video.queue.js", () => ({
   addVideoToQueue: jest.fn(),
   videoQueue: { add: jest.fn() },
+}));
+
+// Mock the SAS token service to avoid Azure connection requirement
+jest.unstable_mockModule("../src/services/sas-token.service.js", () => ({
+  sasTokenService: {
+    generateReadSASUrl: jest.fn(),
+    generateWriteSASUrl: jest.fn(),
+    generateHLSPlaylistSASUrl: jest.fn(),
+    validateSASTokenExpiry: jest.fn(),
+    generateCustomSASUrl: jest.fn(),
+  },
 }));
 
 // Dynamic imports are required when using unstable_mockModule
