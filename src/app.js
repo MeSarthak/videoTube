@@ -5,6 +5,13 @@ import dotenv from "dotenv";
 
 import fs from "fs";
 
+// Rate limiting middleware
+import {
+  generalLimiter,
+  authLimiter,
+  uploadLimiter,
+} from "./middlewares/rateLimiter.middleware.js";
+
 // Ensure public/temp directory exists
 const tempDir = "./public/temp";
 if (!fs.existsSync(tempDir)) {
@@ -36,6 +43,9 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cookieParser());
+
+// Apply general rate limiting to all routes
+app.use(generalLimiter);
 
 //import routes
 import { userRouter } from "./routes/user.routes.js";

@@ -12,11 +12,13 @@ import {
   getRelatedVideos,
 } from "../controllers/video.controller.js";
 import { upload } from "../middlewares/diskStorageMulter.middleware.js";
+import { uploadLimiter } from "../middlewares/rateLimiter.middleware.js";
 const router = express.Router();
 
 router.post(
   "/upload-abr",
   verifyJWT,
+  uploadLimiter,
   upload.fields([
     { name: "video", maxCount: 1 },
     { name: "thumbnail", maxCount: 1 },
