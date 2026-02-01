@@ -135,14 +135,7 @@ export const validateSASTokenRequest = (blobName, options = {}) => {
       message: "Blob name is too long (max 1024 characters)",
       code: CloudErrorCodes.INVALID_BLOB_NAME,
     });
-  } else if (!/^[\w\-\.\/]+$/.test(blobName)) {
-    errors.push({
-      field: "blobName",
-      message: "Blob name contains invalid characters",
-      code: CloudErrorCodes.INVALID_BLOB_NAME,
-    });
   }
-
   // Validate expiry time
   if (options.expiresInSeconds !== undefined) {
     if (

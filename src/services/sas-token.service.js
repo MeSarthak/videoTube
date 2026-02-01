@@ -72,7 +72,7 @@ class SASTokenService {
       }
 
       // Validate blob name format
-      if (!/^[\w\-\.\/]+$/.test(blobName)) {
+      if (!blobName || typeof blobName !== 'string' || blobName.length > 1024) {
         throw new ApiError(400, "Invalid blob name format");
       }
 
@@ -139,7 +139,7 @@ class SASTokenService {
         throw new ApiError(400, "Blob name is required");
       }
 
-      if (!/^[\w\-\.\/]+$/.test(blobName)) {
+      if (!blobName || typeof blobName !== 'string' || blobName.length > 1024) {
         throw new ApiError(400, "Invalid blob name format");
       }
 
