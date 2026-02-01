@@ -72,7 +72,7 @@ class SASTokenService {
       }
 
       // Validate blob name format
-      if (!blobName || typeof blobName !== 'string' || blobName.length > 1024) {
+      if (!blobName || typeof blobName !== "string" || blobName.length > 1024) {
         throw new ApiError(400, "Invalid blob name format");
       }
 
@@ -108,7 +108,6 @@ class SASTokenService {
       };
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      console.error("Error generating read SAS URL:", error);
       throw new ApiError(
         500,
         "Failed to generate SAS URL for download",
@@ -139,7 +138,7 @@ class SASTokenService {
         throw new ApiError(400, "Blob name is required");
       }
 
-      if (!blobName || typeof blobName !== 'string' || blobName.length > 1024) {
+      if (!blobName || typeof blobName !== "string" || blobName.length > 1024) {
         throw new ApiError(400, "Invalid blob name format");
       }
 
@@ -175,7 +174,6 @@ class SASTokenService {
       };
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      console.error("Error generating write SAS URL:", error);
       throw new ApiError(
         500,
         "Failed to generate SAS URL for upload",
@@ -235,7 +233,6 @@ class SASTokenService {
       };
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      console.error("Error generating HLS playlist SAS URL:", error);
       throw new ApiError(
         500,
         "Failed to generate SAS URL for HLS playlist",
@@ -277,7 +274,6 @@ class SASTokenService {
       };
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      console.error("Error validating SAS token expiry:", error);
       throw new ApiError(400, "Invalid SAS URL format", error.message);
     }
   }
@@ -365,7 +361,6 @@ class SASTokenService {
       };
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      console.error("Error generating custom SAS URL:", error);
       throw new ApiError(500, "Failed to generate SAS URL", error.message);
     }
   }

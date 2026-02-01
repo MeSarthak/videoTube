@@ -24,7 +24,6 @@ export const getVideoDuration = (inputPath) => {
         if (isNaN(duration)) {
           reject(new Error("Failed to parse video duration"));
         } else {
-          console.log("Duration:", duration);
           resolve(duration);
         }
       } else {

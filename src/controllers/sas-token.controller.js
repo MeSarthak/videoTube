@@ -92,7 +92,6 @@ const getSASTokenForDownload = asyncHandler(async (req, res) => {
       )
     );
   } catch (error) {
-    console.error("Error generating download SAS token:", error);
     const errorResponse = createCloudErrorResponse(
       error,
       "download_token_generation"
@@ -180,7 +179,6 @@ const getSASTokenForUpload = asyncHandler(async (req, res) => {
       )
     );
   } catch (error) {
-    console.error("Error generating upload SAS token:", error);
     const errorResponse = createCloudErrorResponse(
       error,
       "upload_token_generation"
@@ -267,7 +265,6 @@ const getSASTokenForHLSPlaylist = asyncHandler(async (req, res) => {
       )
     );
   } catch (error) {
-    console.error("Error generating HLS playlist SAS token:", error);
     const errorResponse = createCloudErrorResponse(
       error,
       "hls_token_generation"
@@ -308,7 +305,6 @@ const validateSASTokenExpiry = asyncHandler(async (req, res) => {
       )
     );
   } catch (error) {
-    console.error("Error validating SAS token:", error);
     throw new ApiError(400, "Invalid SAS URL format or validation failed");
   }
 });
@@ -409,7 +405,6 @@ const refreshSASToken = asyncHandler(async (req, res) => {
       )
     );
   } catch (error) {
-    console.error(`Error refreshing ${type} SAS token:`, error);
     const errorResponse = createCloudErrorResponse(
       error,
       `${type}_token_refresh`

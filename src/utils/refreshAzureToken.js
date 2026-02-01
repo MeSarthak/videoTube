@@ -1,4 +1,9 @@
-import { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions, StorageSharedKeyCredential } from "@azure/storage-blob";
+import {
+  BlobServiceClient,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+  StorageSharedKeyCredential,
+} from "@azure/storage-blob";
 
 /**
  * Generates a fresh SAS URL valid for 24 hours
@@ -13,7 +18,8 @@ export async function getRefreshableBlobUrl(blobName) {
       throw new Error("AZURE_STORAGE_CONNECTION_STRING is not set");
     }
 
-    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+    const blobServiceClient =
+      BlobServiceClient.fromConnectionString(connectionString);
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
@@ -28,7 +34,6 @@ export async function getRefreshableBlobUrl(blobName) {
 
     return sasUrl;
   } catch (error) {
-    console.error("Error generating blob SAS URL:", error);
     throw error;
   }
 }
@@ -44,10 +49,15 @@ export function generateSASTokenFromKey() {
     const containerName = process.env.CONTAINER_NAME || "videos";
 
     if (!accountName || !accountKey) {
-      throw new Error("STORAGE_ACCOUNT_NAME or AZURE_STORAGE_ACCOUNT_KEY is not set");
+      throw new Error(
+        "STORAGE_ACCOUNT_NAME or AZURE_STORAGE_ACCOUNT_KEY is not set"
+      );
     }
 
-    const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+    const sharedKeyCredential = new StorageSharedKeyCredential(
+      accountName,
+      accountKey
+    );
 
     const expiresOn = new Date();
     expiresOn.setDate(expiresOn.getDate() + 7); // Valid for 7 days
@@ -63,7 +73,6 @@ export function generateSASTokenFromKey() {
 
     return `https://${accountName}.blob.core.windows.net/?${sasToken}`;
   } catch (error) {
-    console.error("Error generating SAS token:", error);
     throw error;
   }
 }

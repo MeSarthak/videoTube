@@ -40,7 +40,6 @@ class VideoService {
 
       return video;
     } catch (err) {
-      console.error(err);
       throw new ApiError(500, err.message || "Upload failed");
     }
   }
@@ -356,7 +355,6 @@ class VideoService {
         };
       }
     } catch (error) {
-      console.error("Error generating SAS URLs for video:", error);
       // Don't fail the entire request if SAS generation fails
       // Frontend can fall back to requesting tokens separately
     }

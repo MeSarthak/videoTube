@@ -19,7 +19,7 @@ const addComment = asyncHandler(async (req, res) => {
 
   const comment = await commentService.addComment(
     videoId,
-    req.user?._id,
+    req.user._id,
     content
   );
 
@@ -34,7 +34,7 @@ const updateComment = asyncHandler(async (req, res) => {
 
   const comment = await commentService.updateComment(
     commentId,
-    req.user?._id,
+    req.user._id,
     content
   );
 
@@ -46,7 +46,7 @@ const updateComment = asyncHandler(async (req, res) => {
 const deleteComment = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
 
-  await commentService.deleteComment(commentId, req.user?._id);
+  await commentService.deleteComment(commentId, req.user._id);
 
   return res
     .status(200)

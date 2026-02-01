@@ -28,7 +28,7 @@ class DashboardService {
     // 3. Get Total Likes (Optimized for Scalability)
     // approach: fetch user's video IDs first, then count likes for those videos.
     // This avoids the 16MB BSON limit that occurs with $lookup on videos with many likes.
-    const videos = await Video.find({ owner: channelId }, { _id: 1 });
+    const videos = await Video.find({ owner: channelId }, { _id: 1 }).lean();
     const videoIds = videos.map((video) => video._id);
 
     const totalLikes = await Like.countDocuments({
@@ -48,7 +48,9 @@ class DashboardService {
       throw new ApiError(400, "Invalid User ID");
     }
 
-    const videos = await Video.find({ owner: userId }).sort({ createdAt: -1 });
+    const videos = await Video.find({ owner: userId })
+      .sort({ createdAt: -1 })
+      .lean();
     return videos;
   }
 }

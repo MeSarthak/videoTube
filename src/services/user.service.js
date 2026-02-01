@@ -1,6 +1,7 @@
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { validateObjectId } from "../utils/validators.js";
 import mongoose from "mongoose";
 
 class UserService {
@@ -281,6 +282,9 @@ class UserService {
   }
 
   async getWatchHistory(userId) {
+    // Validate userId before creating ObjectId
+    validateObjectId(userId, "User ID");
+
     const user = await User.aggregate([
       {
         $match: {
@@ -322,6 +326,10 @@ class UserService {
         },
       },
     ]);
+
+    if (!user || !user[0]) {
+      throw new ApiError(404, "User not found");
+    }
 
     return user[0].watchHistory;
   }

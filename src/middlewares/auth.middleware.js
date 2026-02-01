@@ -11,17 +11,33 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     if (!token) {
       throw new ApiError(401, "Access token is missing");
     }
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    let decodedToken;
+    try {
+      decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    } catch (jwtError) {
+      if (jwtError.name === "TokenExpiredError") {
+        throw new ApiError(401, "Access token has expired");
+      } else if (jwtError.name === "JsonWebTokenError") {
+        throw new ApiError(401, "Invalid access token");
+      }
+      throw new ApiError(401, "Token verification failed");
+    }
+
     const user = await User.findById(decodedToken._id).select(
       "-password -refreshToken"
     );
     if (!user) {
-      throw new ApiError(401, "User not found");
+      throw new ApiError(401, "User associated with token not found");
     }
     req.user = user;
     next();
   } catch (error) {
-    throw new ApiError(401, "Invalid or expired access token");
+    // Re-throw ApiError as-is, wrap other errors
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(401, "Authentication failed");
   }
 });
 

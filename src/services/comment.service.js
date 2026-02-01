@@ -96,7 +96,12 @@ class CommentService {
       throw new ApiError(403, "Unauthorized to delete this comment");
     }
 
-    await Comment.findByIdAndDelete(commentId);
+    const result = await Comment.findByIdAndDelete(commentId);
+
+    if (!result) {
+      throw new ApiError(500, "Failed to delete comment");
+    }
+
     return { deleted: true };
   }
 }

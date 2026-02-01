@@ -45,7 +45,10 @@ export const mapAzureErrorToCloudError = (error) => {
   const errorCode = error.code?.toLowerCase() || "";
 
   // Blob not found
-  if ((errorCode.includes("notfound") || errorMessage.includes("not found")) && !errorCode.includes("container")) {
+  if (
+    (errorCode.includes("notfound") || errorMessage.includes("not found")) &&
+    !errorCode.includes("container")
+  ) {
     return {
       code: CloudErrorCodes.BLOB_NOT_FOUND,
       message: "The requested blob was not found. It may have been deleted.",
@@ -72,7 +75,8 @@ export const mapAzureErrorToCloudError = (error) => {
 
   // Container not found
   if (
-    errorCode.includes("containernotfound") || errorCode.includes("containername") ||
+    errorCode.includes("containernotfound") ||
+    errorCode.includes("containername") ||
     errorMessage.includes("container not found")
   ) {
     return {
@@ -247,10 +251,6 @@ export const withCloudRetry = async (
 
       // Exponential backoff
       const delayMs = baseDelayMs * Math.pow(2, attempt);
-      console.warn(
-        `Cloud operation failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delayMs}ms:`,
-        error.message
-      );
 
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }

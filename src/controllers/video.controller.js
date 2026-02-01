@@ -3,11 +3,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { videoService } from "../services/video.service.js";
 
 const uploadHLSVideo = asyncHandler(async (req, res) => {
-  console.log("Upload request received");
-  console.log("req.files:", req.files);
-  console.log("req.file:", req.file);
-  console.log("req.body:", req.body);
-
   const ownerId = req.user._id;
   const { title, description } = req.body;
 
