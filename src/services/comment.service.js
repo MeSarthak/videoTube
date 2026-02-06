@@ -60,7 +60,7 @@ class CommentService {
     // Notify Video Owner
     // Re-fetching video is not needed since we fetched it above for validation
     // Notify Video Owner (skip if commenter is the video owner)
-    if (video.owner.toString() !== userId.toString()) {
+    if (!video.owner.equals(userId)) {
       await notificationService.createNotification({
         recipient: video.owner,
         sender: userId,
@@ -78,7 +78,7 @@ class CommentService {
     const comment = await Comment.findById(commentId);
 
     if (!comment) throw new ApiError(404, "Comment not found");
-    if (comment.owner.toString() !== userId.toString()) {
+    if (!comment.owner.equals(userId)) {
       throw new ApiError(403, "Unauthorized to update this comment");
     }
 
@@ -92,7 +92,7 @@ class CommentService {
     const comment = await Comment.findById(commentId);
 
     if (!comment) throw new ApiError(404, "Comment not found");
-    if (comment.owner.toString() !== userId.toString()) {
+    if (!comment.owner.equals(userId)) {
       throw new ApiError(403, "Unauthorized to delete this comment");
     }
 

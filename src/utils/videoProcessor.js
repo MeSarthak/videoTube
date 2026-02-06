@@ -23,17 +23,20 @@ const processVideo = async (videoPath, existingVideoId) => {
     const variants = hlsResult.variants;
 
     // Step 4: Master playlist generate
-    const masterLocal = await generateMasterPlaylist(videoId, variants);
+    await generateMasterPlaylist(videoId, variants);
 
     // Step 5: Upload folder -> Azure Blob Storage
     const uploadedMap = await uploadHLSFolder(baseFolder, videoId);
+
+    const masterBlob = `${videoId}/master.m3u8`;
+    const thumbnailBlob = `${videoId}/thumb.jpg`;
 
     return {
       videoId,
       duration,
       variants,
-      masterUrl: uploadedMap[`${videoId}/master.m3u8`] || masterLocal,
-      thumbnailUrl: uploadedMap[`${videoId}/thumb.jpg`] || thumbnailLocal,
+      masterUrl: uploadedMap[masterBlob] || masterBlob,
+      thumbnailUrl: uploadedMap[thumbnailBlob] || thumbnailBlob,
       uploadedFiles: uploadedMap,
     };
   } catch (err) {

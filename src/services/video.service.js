@@ -3,11 +3,6 @@ import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { addVideoToQueue } from "../queues/video.queue.js";
-import { sasTokenService } from "./sas-token.service.js";
-import {
-  withCloudRetry,
-  createCloudErrorResponse,
-} from "../utils/cloudErrorHandler.js";
 
 class VideoService {
   async uploadHLSVideo({ file, title, description, ownerId }) {
@@ -185,7 +180,7 @@ class VideoService {
           {
             $project: {
               username: 1,
-              fullName: 1,
+              fullname: 1,
               avatar: 1,
             },
           },
@@ -236,7 +231,7 @@ class VideoService {
             {
               $project: {
                 username: 1,
-                fullName: 1,
+                fullname: 1,
                 avatar: 1,
               },
             },
@@ -323,41 +318,8 @@ class VideoService {
 
     const video = videoAggregation[0];
 
-    // Add SAS URLs for cloud access
-    try {
-      if (video.masterPlaylist) {
-        const masterPlaylistSAS = await withCloudRetry(() =>
-          Promise.resolve(
-            sasTokenService.generateHLSPlaylistSASUrl(video.masterPlaylist, {
-              expiresInSeconds: 24 * 60 * 60, // 24 hours for streaming
-            })
-          )
-        );
-        video.masterPlaylistSAS = {
-          url: masterPlaylistSAS.sasUrl,
-          expiresAt: masterPlaylistSAS.expiresAt,
-          permissions: masterPlaylistSAS.permissions,
-        };
-      }
-
-      if (video.thumbnail) {
-        const thumbnailSAS = await withCloudRetry(() =>
-          Promise.resolve(
-            sasTokenService.generateReadSASUrl(video.thumbnail, {
-              expiresInSeconds: 24 * 60 * 60, // 24 hours for thumbnail
-            })
-          )
-        );
-        video.thumbnailSAS = {
-          url: thumbnailSAS.sasUrl,
-          expiresAt: thumbnailSAS.expiresAt,
-          permissions: thumbnailSAS.permissions,
-        };
-      }
-    } catch (error) {
-      // Don't fail the entire request if SAS generation fails
-      // Frontend can fall back to requesting tokens separately
-    }
+    // Note: masterPlaylist and thumbnail now contain blob paths only
+    // Frontend should request SAS tokens via /api/v1/sas-tokens endpoints
 
     // Add to Watch History if user is authenticated
     if (currentUserId) {
@@ -418,7 +380,7 @@ class VideoService {
             {
               $project: {
                 username: 1,
-                fullName: 1,
+                fullname: 1,
                 avatar: 1,
               },
             },
@@ -436,6 +398,9 @@ class VideoService {
    * Increment view count
    */
   async incrementViewCount(videoId) {
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid Video ID");
+    }
     const video = await Video.findByIdAndUpdate(
       videoId,
       {

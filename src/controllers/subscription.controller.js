@@ -6,7 +6,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   const result = await subscriptionService.toggleSubscription(
     channelId,
-    req.user?._id
+    req.user._id
   );
 
   return res

@@ -12,19 +12,15 @@ import {
 
 const router = express.Router();
 
-router.use(verifyJWT); // Apply verifyJWT to all routes
-
-router.route("/").post(createPlaylist);
-
-router
-  .route("/:playlistId")
-  .get(getPlaylistById)
-  .patch(updatePlaylist)
-  .delete(deletePlaylist);
-
-router.route("/add/:videoId/:playlistId").patch(addVideoToPlaylist);
-router.route("/remove/:videoId/:playlistId").patch(removeVideoFromPlaylist);
-
+// Public routes - GET
+router.route("/:playlistId").get(getPlaylistById);
 router.route("/user/:userId").get(getUserPlaylists);
+
+// Protected routes - POST/PATCH/DELETE
+router.route("/").post(verifyJWT, createPlaylist);
+router.route("/:playlistId").patch(verifyJWT, updatePlaylist);
+router.route("/:playlistId").delete(verifyJWT, deletePlaylist);
+router.route("/add/:videoId/:playlistId").patch(verifyJWT, addVideoToPlaylist);
+router.route("/remove/:videoId/:playlistId").patch(verifyJWT, removeVideoFromPlaylist);
 
 export { router as playlistRouter };

@@ -54,10 +54,10 @@ class PlaylistService {
         select: "title thumbnail duration views owner createdAt",
         populate: {
           path: "owner",
-          select: "username fullName avatar",
+          select: "username fullname avatar",
         },
       })
-      .populate("owner", "username fullName avatar");
+      .populate("owner", "username fullname avatar");
 
     if (!playlist) {
       throw new ApiError(404, "Playlist not found");
