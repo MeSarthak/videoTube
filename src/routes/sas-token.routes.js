@@ -72,7 +72,7 @@ router.get("/upload/:videoId", verifyJWT, getSASTokenForUpload);
  *     "contentType": "application/x-mpegURL"
  *   }
  */
-router.get("/hls-playlist/:videoId/:playlistName", getSASTokenForHLSPlaylist);
+router.get("/hls-playlist/:videoId/:playlistName", optionalVerifyJWT, getSASTokenForHLSPlaylist);
 
 /**
  * POST /api/v1/sas-tokens/validate

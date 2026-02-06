@@ -377,7 +377,7 @@ describe("Integration Tests", () => {
     });
 
     expect(refreshed.sasUrl).toBeDefined();
-    expect(refreshed.sasUrl).toBeDefined(); // Token successfully refreshed
+    expect(refreshed.expiresIn).toBeLessThanOrEqual(3600); // New expiry is set correctly
   });
 
   it("should maintain security boundaries across operations", () => {

@@ -8,18 +8,30 @@ import fs from "fs";
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 const isSecure = redisUrl.startsWith("rediss://");
 
+// Build TLS config for secure connections
+let tlsConfig;
+if (isSecure) {
+  tlsConfig = {
+    servername: new URL(redisUrl).hostname,
+    rejectUnauthorized: process.env.NODE_ENV !== "development" && process.env.REDIS_ALLOW_INVALID_CERTS !== "true", // Configurable
+  };
+  // Add CA bundle if provided
+  if (process.env.REDIS_CA) {
+    try {
+      tlsConfig.ca = [fs.readFileSync(process.env.REDIS_CA, "utf-8")];
+    } catch (err) {
+      console.warn(`[Worker] Failed to load REDIS_CA from ${process.env.REDIS_CA}:`, err.message);
+    }
+  }
+}
+
 const connection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
   connectTimeout: 20000,
   retryStrategy: function (times) {
     return Math.min(times * 100, 3000); // Increased retry delay slightly
   },
-  tls: isSecure
-    ? {
-        servername: new URL(redisUrl).hostname,
-        rejectUnauthorized: false,
-      }
-    : undefined,
+  tls: tlsConfig,
 });
 
 connection.on("error", (err) => {
@@ -62,6 +74,22 @@ const worker = new Worker(
         { new: true }
       );
 
+      // Check if video document still exists after update
+      if (!video) {
+        console.error(`[Worker] Video document ${videoId} not found after update - may have been deleted`);
+        throw new Error("Video document was deleted during processing");
+      }
+
+      // 3. Cleanup local source file on success
+      if (fs.existsSync(videoPath)) {
+        try {
+          await fs.promises.unlink(videoPath);
+        } catch (cleanupErr) {
+          // Log but don't throw - cleanup failure shouldn't fail the job
+          console.warn(`[Worker] Failed to cleanup video file ${videoPath}:`, cleanupErr.message);
+        }
+      }
+
       console.log(`[Worker] Video ${videoId} processed successfully.`);
       return video;
     } catch (error) {
@@ -93,7 +121,11 @@ worker.on("completed", (job) => {
 });
 
 worker.on("failed", (job, err) => {
-  console.error(`[Worker] Job ${job.id} failed with ${err.message}`);
+  if (job) {
+    console.error(`[Worker] Job ${job.id} failed with ${err.message}`);
+  } else {
+    console.error(`[Worker] Job failed with error: ${err?.message || "Unknown error"}`);
+  }
 });
 
 export default worker;

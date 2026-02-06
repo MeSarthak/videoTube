@@ -2,6 +2,16 @@ import fs from "fs";
 import path from "path";
 
 export const generateMasterPlaylist = async (videoId, variants) => {
+  // Validate videoId against whitelist (alphanumeric, underscore, hyphen only)
+  if (!videoId || !/^[a-zA-Z0-9_-]+$/.test(videoId)) {
+    throw new Error("Invalid videoId format");
+  }
+
+  // Validate variants is an array
+  if (!Array.isArray(variants) || variants.length === 0) {
+    throw new Error("Variants must be a non-empty array");
+  }
+
   let master = "#EXTM3U\n";
 
   const bandwidth = {
@@ -19,11 +29,19 @@ export const generateMasterPlaylist = async (videoId, variants) => {
   };
 
   variants.forEach((v) => {
+    // Validate variant exists in bandwidth and resolution maps before appending
+    if (!bandwidth.hasOwnProperty(v) || !resolution.hasOwnProperty(v)) {
+      throw new Error(`Invalid variant: ${v}. Must be one of: 360p, 480p, 720p, 1080p`);
+    }
     master += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth[v]},RESOLUTION=${resolution[v]}\n`;
     master += `${v}/index.m3u8\n`;
   });
 
   const masterPath = path.join("public", "temp", videoId, "master.m3u8");
+
+  // Ensure containing directory exists before writing
+  const masterDir = path.dirname(masterPath);
+  await fs.mkdir(masterDir, { recursive: true });
 
   await fs.promises.writeFile(masterPath, master);
 

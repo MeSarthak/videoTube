@@ -28,6 +28,17 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 
 const getSubscribedChannels = asyncHandler(async (req, res) => {
   const { subscriberId } = req.params;
+  const currentUserId = req.user?._id;
+
+  // Enforce that user can only fetch their own subscribed channels
+  if (!currentUserId || currentUserId.toString() !== subscriberId) {
+    return res
+      .status(403)
+      .json(
+        new ApiResponse(403, null, "You can only view your own subscribed channels")
+      );
+  }
+
   const channels =
     await subscriptionService.getSubscribedChannels(subscriberId);
 

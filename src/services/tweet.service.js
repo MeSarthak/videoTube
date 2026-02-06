@@ -1,10 +1,19 @@
 import mongoose from "mongoose";
 import { Tweet } from "../models/tweet.model.js";
+import { Like } from "../models/like.model.js";
 import { ApiError } from "../utils/ApiError.js";
 
 class TweetService {
   async createTweet({ content, ownerId }) {
-    if (!content) throw new ApiError(400, "Content is required");
+    // Validate content - reject whitespace-only strings
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      throw new ApiError(400, "Content is required");
+    }
+
+    // Validate ownerId format
+    if (!ownerId || !mongoose.Types.ObjectId.isValid(ownerId)) {
+      throw new ApiError(400, "Invalid owner ID format");
+    }
 
     const tweet = await Tweet.create({
       content,
@@ -54,6 +63,16 @@ class TweetService {
       throw new ApiError(400, "Invalid Tweet ID");
     }
 
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalid User ID");
+    }
+
+    // Validate content
+    if (!content || (typeof content === "string" && content.trim().length === 0)) {
+      throw new ApiError(400, "Content is required and cannot be empty");
+    }
+
     const tweet = await Tweet.findById(tweetId);
     if (!tweet) throw new ApiError(404, "Tweet not found");
 
@@ -75,6 +94,11 @@ class TweetService {
       throw new ApiError(400, "Invalid Tweet ID");
     }
 
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalid User ID");
+    }
+
     const tweet = await Tweet.findById(tweetId);
     if (!tweet) throw new ApiError(404, "Tweet not found");
 
@@ -86,6 +110,9 @@ class TweetService {
     }
 
     await Tweet.findByIdAndDelete(tweetId);
+
+    // Cascade delete associated likes
+    await Like.deleteMany({ tweet: tweetId });
 
     return { message: "Tweet deleted successfully" };
   }

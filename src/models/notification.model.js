@@ -40,4 +40,17 @@ const notificationSchema = new Schema(
 
 notificationSchema.plugin(mongooseAggregatePaginate);
 
+// Compound index for atomic upsert operations in createNotification
+// Allows efficient find+update in single operation for duplicate prevention
+notificationSchema.index(
+  {
+    recipient: 1,
+    sender: 1,
+    type: 1,
+    referenceId: 1,
+    isRead: 1,
+  },
+  { name: "unique_unread_notification" }
+);
+
 export const Notification = mongoose.model("Notification", notificationSchema);

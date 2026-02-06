@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import connectDB from "./db/index.js";
-import app from "./app.js";
+import app, { initializeTempDir } from "./app.js";
 import fs from "fs";
 import "./workers/video.worker.js"; // Import worker to start processing jobs
 
@@ -22,10 +22,16 @@ process.on("unhandledRejection", (err) => {
 // Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
+  setImmediate(() => {
+    process.exit(1);
+  });
 });
 
 connectDB()
-  .then(() => {
+  .then(async () => {
+    // Ensure temp directory is created before accepting requests
+    await initializeTempDir();
+
     app.listen(process.env.PORT || 8000, () => {
       console.log(`Server is running on port ${process.env.PORT || 8000}`);
     });

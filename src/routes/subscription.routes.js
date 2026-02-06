@@ -10,7 +10,9 @@ const router = Router();
 
 // Public routes - GET
 router.route("/c/:channelId").get(getUserChannelSubscribers);
-router.route("/u/:subscriberId").get(getSubscribedChannels);
+
+// Protected routes - GET (requires authentication)
+router.route("/u/:subscriberId").get(verifyJWT, getSubscribedChannels);
 
 // Protected route - POST
 router.route("/c/:channelId").post(verifyJWT, toggleSubscription);

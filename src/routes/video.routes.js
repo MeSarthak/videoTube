@@ -11,8 +11,8 @@ import {
   incrementViewCount,
   getRelatedVideos,
 } from "../controllers/video.controller.js";
-import { upload } from "../middlewares/diskStorageMulter.middleware.js";
-import { uploadLimiter } from "../middlewares/rateLimiter.middleware.js";
+import { upload, validateFileSignature } from "../middlewares/diskStorageMulter.middleware.js";
+import { uploadLimiter, viewsLimiter } from "../middlewares/rateLimiter.middleware.js";
 const router = express.Router();
 
 router.post(
@@ -23,6 +23,7 @@ router.post(
     { name: "video", maxCount: 1 },
     { name: "thumbnail", maxCount: 1 },
   ]),
+  validateFileSignature, // Validate actual file signatures after upload
   uploadHLSVideo
 );
 router.get("/status/:videoId", verifyJWT, getVideoStatus);
@@ -31,6 +32,6 @@ router.get("/status/:videoId", verifyJWT, getVideoStatus);
 router.get("/", getAllVideos);
 router.get("/:videoId", optionalVerifyJWT, getVideoById);
 router.get("/:videoId/related", getRelatedVideos);
-router.patch("/:videoId/views", incrementViewCount);
+router.patch("/:videoId/views", viewsLimiter, incrementViewCount);
 
 export { router as videoRouter };

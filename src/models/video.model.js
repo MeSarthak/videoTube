@@ -13,7 +13,7 @@ const videoSchema = new Schema(
     thumbnail: { type: String },
 
     views: { type: Number, default: 0 },
-    isPublished: { type: Boolean, default: true },
+    isPublished: { type: Boolean, default: false },
 
     // Status tracking
     status: {

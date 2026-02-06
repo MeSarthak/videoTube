@@ -166,6 +166,11 @@ export const validateNumber = (value, fieldName = "Number", options = {}) => {
 
   const num = Number(value);
 
+  // Reject empty strings explicitly before Number coercion
+  if (typeof value === "string" && value.trim() === "") {
+    throw new ApiError(400, `${fieldName} must be a valid number`);
+  }
+
   if (isNaN(num)) {
     throw new ApiError(400, `${fieldName} must be a valid number`);
   }
@@ -226,11 +231,14 @@ export const validateEmail = (email, fieldName = "Email") => {
     throw new ApiError(400, `${fieldName} is required`);
   }
 
-  if (!emailRegex.test(email)) {
+  // Trim first, then validate
+  const normalized = email.trim();
+
+  if (!emailRegex.test(normalized)) {
     throw new ApiError(400, `${fieldName} format is invalid`);
   }
 
-  return email.toLowerCase().trim();
+  return normalized.toLowerCase();
 };
 
 /**
@@ -246,7 +254,8 @@ export const validateEnum = (
   allowedValues = [],
   fieldName = "Field"
 ) => {
-  if (!value) {
+  // Only check for null/undefined, not falsy values (0, false, "" might be valid)
+  if (value === undefined || value === null) {
     throw new ApiError(400, `${fieldName} is required`);
   }
 

@@ -16,6 +16,39 @@ import {
 } from "../utils/cloudErrorHandler.js";
 
 /**
+ * Helper function to sanitize blob paths to prevent path traversal
+ */
+const sanitizeBlobPath = (blobPath) => {
+  if (!blobPath || typeof blobPath !== "string") {
+    return null;
+  }
+  // Decode URL encoding safely
+  try {
+    let decoded = decodeURIComponent(blobPath);
+    // Normalize path
+    const normalized = decoded.split(/[\\/]+/).filter(p => p && p !== "." && p !== "..");
+    // Reject if any .. segments found
+    if (normalized.join("/") !== decoded.split(/[\\/]+/).filter(p => p).join("/")) {
+      return null;
+    }
+    return normalized.join("/");
+  } catch (err) {
+    // Invalid percent-encoding or decoding error
+    return null;
+  }
+};
+
+/**
+ * Helper function to validate blob path references intended video
+ */
+const validateBlobPathForVideo = (blobPath, videoId) => {
+  if (!blobPath || !blobPath.startsWith(videoId + "/")) {
+    return false;
+  }
+  return true;
+};
+
+/**
  * Get SAS token for downloading/streaming video content
  * Anyone can get a download token, but we should restrict to published videos
  */
@@ -132,6 +165,12 @@ const getSASTokenForUpload = asyncHandler(async (req, res) => {
     throw new ApiError(400, "blobPath is required for upload tokens");
   }
 
+  // Sanitize and validate blob path to prevent path traversal
+  const sanitized = sanitizeBlobPath(blobPath);
+  if (!sanitized || !validateBlobPathForVideo(sanitized, videoId)) {
+    throw new ApiError(400, "Invalid blob path: path traversal not allowed");
+  }
+
   // Parse and validate expiry time
   let expirySeconds = 15 * 60; // 15 minutes default for upload (shorter for security)
   if (expiresInSeconds) {
@@ -144,7 +183,7 @@ const getSASTokenForUpload = asyncHandler(async (req, res) => {
   }
 
   // Validate blob path
-  const validation = validateSASTokenRequest(blobPath, {
+  const validation = validateSASTokenRequest(sanitized, {
     expiresInSeconds: expirySeconds,
   });
 
@@ -158,7 +197,7 @@ const getSASTokenForUpload = asyncHandler(async (req, res) => {
   try {
     const result = await withCloudRetry(() =>
       Promise.resolve(
-        sasTokenService.generateWriteSASUrl(blobPath, {
+        sasTokenService.generateWriteSASUrl(sanitized, {
           expiresInSeconds: expirySeconds,
         })
       )
@@ -173,7 +212,7 @@ const getSASTokenForUpload = asyncHandler(async (req, res) => {
           expiresIn: result.expiresIn,
           permissions: result.permissions,
           videoId,
-          blobPath,
+          blobPath: sanitized,
         },
         "Upload SAS token generated successfully"
       )
@@ -212,6 +251,12 @@ const getSASTokenForHLSPlaylist = asyncHandler(async (req, res) => {
 
   if (!playlistName) {
     throw new ApiError(400, "Playlist name is required");
+  }
+
+  // Sanitize and validate playlistName to prevent path traversal
+  const allowedPlaylistRegex = /^[a-zA-Z0-9._-]+$/;
+  if (!allowedPlaylistRegex.test(playlistName)) {
+    throw new ApiError(400, "Invalid playlist name: only alphanumeric, dots, hyphens, and underscores allowed");
   }
 
   // Construct blob path
@@ -333,6 +378,8 @@ const refreshSASToken = asyncHandler(async (req, res) => {
   }
 
   // Authorization checks based on type
+  let sanitizedBlobPath = null;
+  
   if (type === "upload") {
     if (!userId) {
       throw new ApiError(
@@ -346,9 +393,29 @@ const refreshSASToken = asyncHandler(async (req, res) => {
     if (!blobPath) {
       throw new ApiError(400, "blobPath is required for upload token refresh");
     }
-  } else if (type === "download" || type === "hls") {
+    // Sanitize and validate blob path
+    sanitizedBlobPath = sanitizeBlobPath(blobPath);
+    if (!sanitizedBlobPath || !validateBlobPathForVideo(sanitizedBlobPath, videoId)) {
+      throw new ApiError(400, "Invalid blob path: path traversal not allowed");
+    }
+  } else if (type === "download") {
     if (!video.isPublished || video.status !== "published") {
       throw new ApiError(403, "Video is not available for download");
+    }
+    if (!video.masterPlaylist) {
+      throw new ApiError(400, "Master playlist not available for this video");
+    }
+  } else if (type === "hls") {
+    if (!video.isPublished || video.status !== "published") {
+      throw new ApiError(403, "Video is not available for HLS streaming");
+    }
+    if (!blobPath) {
+      throw new ApiError(400, "blobPath is required for HLS token refresh");
+    }
+    // Sanitize and validate blob path
+    sanitizedBlobPath = sanitizeBlobPath(blobPath);
+    if (!sanitizedBlobPath || !validateBlobPathForVideo(sanitizedBlobPath, videoId)) {
+      throw new ApiError(400, "Invalid blob path: path traversal not allowed");
     }
   }
 
@@ -369,7 +436,7 @@ const refreshSASToken = asyncHandler(async (req, res) => {
       case "upload":
         result = await withCloudRetry(() =>
           Promise.resolve(
-            sasTokenService.generateWriteSASUrl(blobPath, {
+            sasTokenService.generateWriteSASUrl(sanitizedBlobPath, {
               expiresInSeconds: 15 * 60,
             })
           )
@@ -377,12 +444,9 @@ const refreshSASToken = asyncHandler(async (req, res) => {
         break;
 
       case "hls":
-        if (!blobPath) {
-          throw new ApiError(400, "blobPath is required for HLS token refresh");
-        }
         result = await withCloudRetry(() =>
           Promise.resolve(
-            sasTokenService.generateHLSPlaylistSASUrl(blobPath, {
+            sasTokenService.generateHLSPlaylistSASUrl(sanitizedBlobPath, {
               expiresInSeconds: 24 * 60 * 60,
             })
           )

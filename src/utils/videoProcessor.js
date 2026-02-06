@@ -12,15 +12,16 @@ const processVideo = async (videoPath, existingVideoId) => {
   let baseFolder;
 
   try {
-    // Run generation tasks in parallel
-    const [hlsResult, thumbnailLocal, duration] = await Promise.all([
-      generateHLS(videoPath, videoId),
+    // First await generateHLS to capture baseFolder
+    const hlsResult = await generateHLS(videoPath, videoId);
+    baseFolder = hlsResult.baseFolder;
+    const variants = hlsResult.variants;
+
+    // Then run thumbnail and duration in parallel
+    const [thumbnailLocal, duration] = await Promise.all([
       generateThumbnail(videoPath, videoId),
       getVideoDuration(videoPath),
     ]);
-
-    baseFolder = hlsResult.baseFolder;
-    const variants = hlsResult.variants;
 
     // Step 4: Master playlist generate
     await generateMasterPlaylist(videoId, variants);
@@ -43,13 +44,19 @@ const processVideo = async (videoPath, existingVideoId) => {
     console.error("Video Processing Failed:", err);
     throw err;
   } finally {
-    // Cleanup local temp folder
-    if (baseFolder && fs.existsSync(baseFolder)) {
-      fs.rmSync(baseFolder, { recursive: true, force: true });
-    }
-    // Cleanup the uploaded original video file from disk
-    if (videoPath && fs.existsSync(videoPath)) {
-      fs.unlinkSync(videoPath);
+    // Wrap cleanup in try-catch to prevent masking original error
+    try {
+      // Cleanup local temp folder
+      if (baseFolder && fs.existsSync(baseFolder)) {
+        fs.rmSync(baseFolder, { recursive: true, force: true });
+      }
+      // Cleanup the uploaded original video file from disk
+      if (videoPath && fs.existsSync(videoPath)) {
+        fs.unlinkSync(videoPath);
+      }
+    } catch (cleanupErr) {
+      // Log cleanup errors but don't throw to preserve original error
+      console.error("Cleanup error:", cleanupErr);
     }
   }
 };

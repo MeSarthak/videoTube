@@ -6,6 +6,11 @@ import mongoose from "mongoose";
 
 class CommentService {
   async getVideoComments(videoId, page = 1, limit = 10) {
+    // Validate videoId format
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid video ID format");
+    }
+
     const aggregateQuery = Comment.aggregate([
       {
         $match: {
@@ -48,6 +53,11 @@ class CommentService {
   async addComment(videoId, userId, content) {
     if (!content) throw new ApiError(400, "Content is required");
 
+    // Validate videoId format
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid video ID format");
+    }
+
     const video = await Video.findById(videoId);
     if (!video) throw new ApiError(404, "Video not found");
 
@@ -61,12 +71,17 @@ class CommentService {
     // Re-fetching video is not needed since we fetched it above for validation
     // Notify Video Owner (skip if commenter is the video owner)
     if (!video.owner.equals(userId)) {
-      await notificationService.createNotification({
-        recipient: video.owner,
-        sender: userId,
-        type: "COMMENT",
-        referenceId: videoId,
-      });
+      try {
+        await notificationService.createNotification({
+          recipient: video.owner,
+          sender: userId,
+          type: "COMMENT",
+          referenceId: videoId,
+        });
+      } catch (notifErr) {
+        // Log but don't fail the comment creation
+        console.error(`Failed to create notification for comment on video ${videoId}:`, notifErr.message);
+      }
     }
 
     return comment;
@@ -74,6 +89,11 @@ class CommentService {
 
   async updateComment(commentId, userId, content) {
     if (!content) throw new ApiError(400, "Content is required");
+
+    // Validate commentId format
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+      throw new ApiError(400, "Invalid comment ID format");
+    }
 
     const comment = await Comment.findById(commentId);
 
@@ -89,6 +109,11 @@ class CommentService {
   }
 
   async deleteComment(commentId, userId) {
+    // Validate commentId format
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+      throw new ApiError(400, "Invalid comment ID format");
+    }
+
     const comment = await Comment.findById(commentId);
 
     if (!comment) throw new ApiError(404, "Comment not found");

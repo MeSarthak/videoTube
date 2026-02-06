@@ -6,11 +6,16 @@ import {
 } from "@azure/storage-blob";
 
 /**
- * Generates a fresh SAS URL valid for 24 hours
+ * Generates a fresh SAS URL valid for 1 hour
  * Use this in your code instead of static SAS tokens
  */
 export async function getRefreshableBlobUrl(blobName) {
   try {
+    // Validate blobName
+    if (!blobName || typeof blobName !== "string" || blobName.trim() === "") {
+      throw new Error("Invalid blobName: must be a non-empty string");
+    }
+
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     const containerName = process.env.CONTAINER_NAME || "videos";
 
@@ -23,13 +28,13 @@ export async function getRefreshableBlobUrl(blobName) {
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-    // Generate SAS URL valid for 24 hours
+    // Generate SAS URL valid for 1 hour with read-only permissions
     const expiresOn = new Date();
-    expiresOn.setHours(expiresOn.getHours() + 24);
+    expiresOn.setHours(expiresOn.getHours() + 1);
 
     const sasUrl = await blockBlobClient.generateSasUrl({
       expiresOn: expiresOn,
-      permissions: BlobSASPermissions.parse("racwd"), // read, add, create, write, delete
+      permissions: BlobSASPermissions.parse("r"), // read-only
     });
 
     return sasUrl;
@@ -60,18 +65,18 @@ export function generateSASTokenFromKey() {
     );
 
     const expiresOn = new Date();
-    expiresOn.setDate(expiresOn.getDate() + 7); // Valid for 7 days
+    expiresOn.setHours(expiresOn.getHours() + 1); // Valid for 1 hour
 
     const sasToken = generateBlobSASQueryParameters(
       {
         containerName: containerName,
-        permissions: BlobSASPermissions.parse("racwd"),
+        permissions: BlobSASPermissions.parse("r"), // read-only
         expiresOn: expiresOn,
       },
       sharedKeyCredential
     ).toString();
 
-    return `https://${accountName}.blob.core.windows.net/?${sasToken}`;
+    return `https://${accountName}.blob.core.windows.net/${containerName}/?${sasToken}`;
   } catch (error) {
     throw error;
   }

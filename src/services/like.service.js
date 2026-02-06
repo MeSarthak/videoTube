@@ -9,34 +9,55 @@ class LikeService {
   async toggleVideoLike(videoId, userId) {
     if (!videoId || !userId) throw new ApiError(400, "Invalid IDs");
 
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid video ID format");
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalid user ID format");
+    }
+
     const video = await Video.findById(videoId);
     if (!video) throw new ApiError(404, "Video not found");
 
-    const existingLike = await Like.findOne({
+    // Use atomic operation instead of read-then-write
+    const deletedLike = await Like.findOneAndDelete({
       video: videoId,
       likedBy: userId,
     });
 
-    if (existingLike) {
-      await Like.findByIdAndDelete(existingLike._id);
+    if (deletedLike) {
       return { liked: false };
     }
 
-    await Like.create({
-      video: videoId,
-      likedBy: userId,
-    });
-
-    // Notify Video Owner
-    // Video is already fetched above for validation
-    // Skip notification if user likes their own video
-    if (!video.owner.equals(userId)) {
-      await notificationService.createNotification({
-        recipient: video.owner,
-        sender: userId,
-        type: "VIDEO_LIKE",
-        referenceId: videoId,
+    // Create new like
+    // Handle duplicate key error (E11000) which occurs if concurrent requests
+    // try to like the same video - treat as successful since like already exists
+    try {
+      await Like.create({
+        video: videoId,
+        likedBy: userId,
       });
+    } catch (err) {
+      if (err.code === 11000) {
+        // Duplicate key error - like already exists, treat as successful
+        return { liked: true };
+      }
+      throw err;
+    }
+
+    // Notify Video Owner (skip if user likes their own video)
+    if (!video.owner.equals(userId)) {
+      try {
+        await notificationService.createNotification({
+          recipient: video.owner,
+          sender: userId,
+          type: "VIDEO_LIKE",
+          referenceId: videoId,
+        });
+      } catch (notifErr) {
+        console.error(`Failed to create like notification:`, notifErr.message);
+      }
     }
 
     return { liked: true };
@@ -45,40 +66,66 @@ class LikeService {
   async toggleCommentLike(commentId, userId) {
     if (!commentId || !userId) throw new ApiError(400, "Invalid IDs");
 
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+      throw new ApiError(400, "Invalid comment ID format");
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalid user ID format");
+    }
+
     const comment = await Comment.findById(commentId);
     if (!comment) throw new ApiError(404, "Comment not found");
 
-    const existingLike = await Like.findOne({
+    // Use atomic operation instead of read-then-write
+    const deletedLike = await Like.findOneAndDelete({
       comment: commentId,
       likedBy: userId,
     });
 
-    if (existingLike) {
-      await Like.findByIdAndDelete(existingLike._id);
+    if (deletedLike) {
       return { liked: false };
     }
 
-    await Like.create({
-      comment: commentId,
-      likedBy: userId,
-    });
-
-    // Notify Comment Owner
-    // Comment already fetched above
-    // Skip notification if user likes their own comment
-    if (!comment.owner.equals(userId)) {
-      await notificationService.createNotification({
-        recipient: comment.owner,
-        sender: userId,
-        type: "COMMENT_LIKE",
-        referenceId: commentId,
+    // Create new like
+    // Handle duplicate key error (E11000) which occurs if concurrent requests
+    // try to like the same comment - treat as successful since like already exists
+    try {
+      await Like.create({
+        comment: commentId,
+        likedBy: userId,
       });
+    } catch (err) {
+      if (err.code === 11000) {
+        // Duplicate key error - like already exists, treat as successful
+        return { liked: true };
+      }
+      throw err;
+    }
+
+    // Notify Comment Owner (skip if user likes their own comment)
+    if (!comment.owner.equals(userId)) {
+      try {
+        await notificationService.createNotification({
+          recipient: comment.owner,
+          sender: userId,
+          type: "COMMENT_LIKE",
+          referenceId: commentId,
+        });
+      } catch (notifErr) {
+        console.error(`Failed to create comment like notification:`, notifErr.message);
+      }
     }
 
     return { liked: true };
   }
 
   async getLikedVideos(userId) {
+    // Validate userId before ObjectId conversion
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalid user ID format");
+    }
+
     return await Like.aggregate([
       {
         $match: {

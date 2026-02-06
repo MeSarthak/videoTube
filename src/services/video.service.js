@@ -28,6 +28,14 @@ class VideoService {
           description: description,
         });
       } catch (queueError) {
+        // Clean up uploaded file on queue failure
+        if (file && file.path) {
+          try {
+            await import("fs/promises").then(fs => fs.unlink(file.path));
+          } catch (unlinkErr) {
+            console.error(`Failed to cleanup file at ${file.path}:`, unlinkErr.message);
+          }
+        }
         // If queue fails, delete the DB entry to avoid zombie records
         await Video.findByIdAndDelete(video._id);
         throw new ApiError(500, "Failed to queue video for processing");
@@ -35,11 +43,18 @@ class VideoService {
 
       return video;
     } catch (err) {
+      // Preserve original ApiError if it exists
+      if (err instanceof ApiError) throw err;
       throw new ApiError(500, err.message || "Upload failed");
     }
   }
 
   async getVideoStatus(videoId) {
+    // Validate videoId format
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      throw new ApiError(400, "Invalid videoId");
+    }
+
     const video = await Video.findById(videoId).select(
       "status uploadStatus errorMessage masterPlaylist thumbnail"
     );
@@ -85,6 +100,9 @@ class VideoService {
 
     // Owner Filter
     if (userId) {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, "Invalid User ID");
+      }
       matchStage.owner = new mongoose.Types.ObjectId(userId);
     }
 
@@ -113,16 +131,20 @@ class VideoService {
 
       switch (uploadDate) {
         case "today":
-          startDate = new Date(now.setHours(0, 0, 0, 0));
+          startDate = new Date(now.getTime());
+          startDate.setHours(0, 0, 0, 0);
           break;
         case "week":
-          startDate = new Date(now.setDate(now.getDate() - 7));
+          startDate = new Date(now.getTime());
+          startDate.setDate(startDate.getDate() - 7);
           break;
         case "month":
-          startDate = new Date(now.setMonth(now.getMonth() - 1));
+          startDate = new Date(now.getTime());
+          startDate.setMonth(startDate.getMonth() - 1);
           break;
         case "year":
-          startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+          startDate = new Date(now.getTime());
+          startDate.setFullYear(startDate.getFullYear() - 1);
           break;
         default:
           break;
@@ -257,12 +279,14 @@ class VideoService {
           likesCount: { $size: "$likes" },
           isLiked: {
             $cond: {
-              if: {
-                $in: [
-                  new mongoose.Types.ObjectId(currentUserId),
-                  "$likes.likedBy",
-                ],
-              },
+              if: currentUserId
+                ? {
+                    $in: [
+                      new mongoose.Types.ObjectId(currentUserId),
+                      "$likes.likedBy",
+                    ],
+                  }
+                : false,
               then: true,
               else: false,
             },
@@ -273,19 +297,21 @@ class VideoService {
       {
         $lookup: {
           from: "subscriptions",
-          let: { ownerId: "$owner._id" },
+          let: {
+            ownerId: "$owner._id",
+            currentUserId: currentUserId
+              ? new mongoose.Types.ObjectId(currentUserId)
+              : null,
+          },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
                     { $eq: ["$channel", "$$ownerId"] },
-                    {
-                      $eq: [
-                        "$subscriber",
-                        new mongoose.Types.ObjectId(currentUserId),
-                      ],
-                    },
+                    currentUserId
+                      ? { $eq: ["$subscriber", "$$currentUserId"] }
+                      : { $eq: [true, false] },
                   ],
                 },
               },
@@ -323,8 +349,10 @@ class VideoService {
 
     // Add to Watch History if user is authenticated
     if (currentUserId) {
+      // Ensure videoId is stored as ObjectId in watchHistory
+      const videoIdObjectId = new mongoose.Types.ObjectId(videoId);
       await User.findByIdAndUpdate(currentUserId, {
-        $addToSet: { watchHistory: videoId }, // Prevent duplicates with $addToSet
+        $addToSet: { watchHistory: videoIdObjectId }, // Prevent duplicates with $addToSet
       });
     }
 
@@ -344,11 +372,17 @@ class VideoService {
       throw new ApiError(404, "Video not found");
     }
 
+    // Helper function to escape regex special characters
+    const escapeRegExp = (str) => {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    };
+
     // Split title into words for basic keyword matching (exclude short words)
     const titleWords = currentVideo.title
       .split(" ")
-      .filter((w) => w.length > 3);
-    const regexPattern = titleWords.join("|"); // "Learn|Javascript|React"
+      .filter((w) => w.length > 3)
+      .map((w) => escapeRegExp(w));
+    const regexPattern = titleWords.join("|"); // "Learn|Javascript|React" (escaped)
 
     // Build $or array conditionally
     const orConditions = [{ owner: currentVideo.owner }]; // Same channel

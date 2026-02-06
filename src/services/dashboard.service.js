@@ -48,7 +48,10 @@ class DashboardService {
       throw new ApiError(400, "Invalid User ID");
     }
 
-    const videos = await Video.find({ owner: userId })
+    // Convert userId to ObjectId for consistency with getChannelStats
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const videos = await Video.find({ owner: userObjectId })
       .sort({ createdAt: -1 })
       .lean();
     return videos;

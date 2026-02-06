@@ -209,24 +209,28 @@ export const isRetriableCloudError = (error) => {
 
   const errorCode = error.code?.toLowerCase() || "";
   const errorMessage = error.message?.toLowerCase() || "";
+  const statusCode = error.statusCode || error.status;
 
-  // Timeout, throttling, service unavailable
+  // Timeout, throttling, service unavailable (but NOT 500)
   const retriableCodes = [
     "timeout",
     "econnrefused",
     "econnreset",
     "429",
     "503",
-    "500",
   ];
 
-  return retriableCodes.some(
+  // Check string codes first
+  const isRetriableStringCode = retriableCodes.some(
     (code) =>
       errorCode.includes(code) ||
-      errorMessage.includes(code) ||
-      error.statusCode === 429 ||
-      error.statusCode === 503
+      errorMessage.includes(code)
   );
+
+  // Check numeric status codes separately (only 429, 503)
+  const isRetriableStatusCode = statusCode === 429 || statusCode === 503;
+
+  return isRetriableStringCode || isRetriableStatusCode;
 };
 
 /**

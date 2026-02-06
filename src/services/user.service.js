@@ -3,17 +3,22 @@ import { ApiError } from "../utils/ApiError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { validateObjectId } from "../utils/validators.js";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 
 class UserService {
   async generateAccessAndRefreshToken(userId) {
     try {
       const user = await User.findById(userId);
+      if (!user) {
+        throw new ApiError(404, "User not found");
+      }
       const accessToken = user.generateAccessToken();
       const refreshToken = user.generateRefreshToken();
       user.refreshToken = refreshToken;
       await user.save({ validateBeforeSave: false });
       return { accessToken, refreshToken };
     } catch (err) {
+      if (err instanceof ApiError) throw err;
       throw new ApiError(500, "Token generation failed");
     }
   }
@@ -26,10 +31,13 @@ class UserService {
     avatarLocalPath,
     coverImageLocalPath,
   }) {
+    // Validate fields - explicitly check for null/undefined
     if (
-      [fullname, username, email, password].some(
-        (field) => field?.trim() === ""
-      )
+      !fullname || !username || !email || !password ||
+      String(fullname).trim() === "" ||
+      String(username).trim() === "" ||
+      String(email).trim() === "" ||
+      String(password).trim() === ""
     ) {
       throw new ApiError(400, "All fields are required");
     }
@@ -54,7 +62,7 @@ class UserService {
     }
 
     if (!avatar) {
-      throw new ApiError(400, "Avatar upload failed");
+      throw new ApiError(500, "Avatar upload failed");
     }
 
     const user = await User.create({
@@ -81,17 +89,30 @@ class UserService {
       throw new ApiError(400, "Email or Username is required");
     }
 
-    const user = await User.findOne({
-      $or: [{ username }, { email }],
-    });
+    // Build $or query dynamically to avoid undefined values
+    const orCriteria = [];
+    if (username != null && username !== "") {
+      orCriteria.push({ username });
+    }
+    if (email != null && email !== "") {
+      orCriteria.push({ email });
+    }
 
+    if (orCriteria.length === 0) {
+      throw new ApiError(400, "Email or Username is required");
+    }
+
+    const query = orCriteria.length === 1 ? orCriteria[0] : { $or: orCriteria };
+    const user = await User.findOne(query);
+
+    // Generic authentication error to prevent username enumeration
     if (!user) {
-      throw new ApiError(404, "User not found");
+      throw new ApiError(401, "Invalid credentials");
     }
 
     const isPasswordValid = await user.isPasswordCorrect(password);
     if (!isPasswordValid) {
-      throw new ApiError(401, "Invalid password");
+      throw new ApiError(401, "Invalid credentials");
     }
 
     const { accessToken, refreshToken } =
@@ -116,19 +137,6 @@ class UserService {
       throw new ApiError(401, "Refresh token is missing");
     }
 
-    // In a real service, you might want to decode the token here or assume the caller has done it.
-    // However, for strict layering, services usually handle data logic.
-    // We'll rely on the controller to pass the token, but we verify it here if needed,
-    // or assume the middleware/controller logic is sound.
-    // For this implementation, let's keep the verification logic here to be safe or rely on the caller.
-
-    // Note: jwt.verify needs the secret, which is env var.
-    // To keep it simple and clean, we'll import jwt in the service if we need to verify again,
-    // or we assume the controller passes the decoded ID.
-    // BUT, the original logic verifies the token string.
-
-    // We will verify it here to encapsulate the logic.
-    const jwt = (await import("jsonwebtoken")).default;
     let decodedToken;
     try {
       decodedToken = jwt.verify(
@@ -153,6 +161,10 @@ class UserService {
 
   async changePassword(userId, oldPassword, newPassword) {
     const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
     if (!isPasswordCorrect) {
@@ -166,6 +178,12 @@ class UserService {
   async updateAccountDetails(userId, { fullname, email }) {
     if (!fullname || !email) {
       throw new ApiError(400, "All fields are required");
+    }
+
+    // Check for existing email (avoid duplicate email for different user)
+    const existingUser = await User.findOne({ email });
+    if (existingUser && !existingUser._id.equals(userId)) {
+      throw new ApiError(409, "Email already in use");
     }
 
     const user = await User.findByIdAndUpdate(
@@ -188,7 +206,7 @@ class UserService {
     }
 
     const avatar = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatar.url) {
+    if (!avatar) {
       throw new ApiError(500, "Avatar upload failed");
     }
 
@@ -207,7 +225,7 @@ class UserService {
     }
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-    if (!coverImage.url) {
+    if (!coverImage) {
       throw new ApiError(500, "Cover image upload failed");
     }
 
@@ -253,7 +271,14 @@ class UserService {
           subscribedToCount: { $size: "$subscribedTo" },
           isSubscribed: {
             $cond: {
-              if: { $in: [currentUserId, "$subscribers.subscriber"] },
+              if: {
+                $in: [
+                  currentUserId && mongoose.Types.ObjectId.isValid(currentUserId)
+                    ? new mongoose.Types.ObjectId(currentUserId)
+                    : null,
+                  "$subscribers.subscriber",
+                ],
+              },
               then: true,
               else: false,
             },

@@ -18,4 +18,4 @@ RUN npm install --omit=dev
 COPY . .
 
 EXPOSE 8000
-CMD ["node", "-r", "dotenv/config", "src/index.js"]
+CMD ["node", "src/index.js"]

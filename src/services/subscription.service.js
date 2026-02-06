@@ -9,6 +9,14 @@ class SubscriptionService {
       throw new ApiError(400, "Invalid channel or user ID");
     }
 
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(channelId)) {
+      throw new ApiError(400, "Invalid channel ID format");
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalid user ID format");
+    }
+
     if (channelId.toString() === userId.toString()) {
       throw new ApiError(400, "You cannot subscribe to your own channel");
     }
@@ -18,34 +26,52 @@ class SubscriptionService {
       throw new ApiError(404, "Channel not found");
     }
 
-    const existingSubscription = await Subscription.findOne({
+    // Use atomic operation: try to delete first
+    const deletedSubscription = await Subscription.findOneAndDelete({
       subscriber: userId,
       channel: channelId,
     });
 
-    if (existingSubscription) {
-      await Subscription.findByIdAndDelete(existingSubscription._id);
+    if (deletedSubscription) {
       return { subscribed: false };
     }
 
-    await Subscription.create({
-      subscriber: userId,
-      channel: channelId,
-    });
+    // Create new subscription
+    try {
+      await Subscription.create({
+        subscriber: userId,
+        channel: channelId,
+      });
+    } catch (err) {
+      // Handle duplicate key error (rare edge case)
+      if (err.code === 11000) {
+        return { subscribed: true };
+      }
+      throw err;
+    }
 
     // Notify Channel Owner
-    await notificationService.createNotification({
-      recipient: channelId,
-      sender: userId,
-      type: "SUBSCRIBE",
-      referenceId: channelId, // Channel ID serves as reference
-    });
+    try {
+      await notificationService.createNotification({
+        recipient: channelId,
+        sender: userId,
+        type: "SUBSCRIBE",
+        referenceId: channelId,
+      });
+    } catch (notifErr) {
+      console.error(`Failed to create subscription notification:`, notifErr.message);
+    }
 
     return { subscribed: true };
   }
 
   async getUserChannelSubscribers(channelId) {
     if (!channelId) throw new ApiError(400, "Channel ID is required");
+
+    // Validate channelId format
+    if (!mongoose.Types.ObjectId.isValid(channelId)) {
+      throw new ApiError(400, "Invalid channel ID format");
+    }
 
     return await Subscription.aggregate([
       {
@@ -80,6 +106,11 @@ class SubscriptionService {
 
   async getSubscribedChannels(subscriberId) {
     if (!subscriberId) throw new ApiError(400, "Subscriber ID is required");
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(subscriberId)) {
+      throw new ApiError(400, "Invalid subscriber ID format");
+    }
 
     return await Subscription.aggregate([
       {

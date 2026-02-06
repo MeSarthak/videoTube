@@ -33,6 +33,12 @@ const markAsRead = asyncHandler(async (req, res) => {
     req.user._id
   );
 
+  if (!notification) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, null, "Notification not found or not accessible"));
+  }
+
   return res
     .status(200)
     .json(new ApiResponse(200, notification, "Notification marked as read"));

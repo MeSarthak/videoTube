@@ -68,27 +68,47 @@ export const readLimiter = rateLimit({
 });
 
 /**
- * Create user-specific rate limiter
- * Used for per-user rate limiting based on userId
+ * Singleton rate limiter for per-user operations
+ * Limit: 1000 requests per hour per user (or 500 per IP if unauthenticated)
  */
-export const createUserLimiter = () => {
-  return rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 1000, // authenticated users get 1000 requests per hour
-    message: "Rate limit exceeded for your account, please try again later.",
-    standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req) => {
-      // Use userId if authenticated, otherwise use IP
-      return req.user?._id?.toString() || req.ip;
-    },
-  });
-};
+export const userLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: (req) => {
+    // Higher limit for authenticated users, lower for unauthenticated
+    return req.user ? 1000 : 500;
+  },
+  message: "Rate limit exceeded, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use userId if authenticated, otherwise use IP
+    return req.user?._id?.toString() || req.ip;
+  },
+});
+
+/**
+ * Views rate limiter to prevent view count inflation
+ * Limit: 1 request per IP per video per minute
+ * Keys on IP + videoId combination
+ */
+export const viewsLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 1, // 1 view per IP per video per minute
+  message: "You can only increment view count once per minute per video",
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Defensively handle missing videoId with fallback to original URL
+    const videoId = req.params.videoId ?? req.originalUrl;
+    return `${req.ip}-${videoId}`;
+  },
+});
 
 export default {
   generalLimiter,
   authLimiter,
   uploadLimiter,
   readLimiter,
-  createUserLimiter,
+  userLimiter,
+  viewsLimiter,
 };

@@ -98,7 +98,7 @@ class SASTokenService {
         sharedKeyCredential
       ).toString();
 
-      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${blobName}?${sasToken}`;
+      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${encodeURIComponent(blobName)}?${sasToken}`;
 
       return {
         sasUrl,
@@ -164,7 +164,7 @@ class SASTokenService {
         sharedKeyCredential
       ).toString();
 
-      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${blobName}?${sasToken}`;
+      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${encodeURIComponent(blobName)}?${sasToken}`;
 
       return {
         sasUrl,
@@ -184,7 +184,7 @@ class SASTokenService {
 
   /**
    * Generate SAS URL for HLS manifest/playlist files (READ ONLY)
-   * Special handling for M3U8 playlists which require READ + LIST permissions
+   * M3U8 playlists only require READ permissions
    *
    * @param {String} blobName - The blob identifier
    * @param {Object} options - Configuration options
@@ -222,7 +222,7 @@ class SASTokenService {
         sharedKeyCredential
       ).toString();
 
-      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${blobName}?${sasToken}`;
+      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${encodeURIComponent(blobName)}?${sasToken}`;
 
       return {
         sasUrl,
@@ -351,7 +351,8 @@ class SASTokenService {
         sharedKeyCredential
       ).toString();
 
-      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${blobName}?${sasToken}`;
+      // URL-encode the blobName for special characters
+      const sasUrl = `https://${this.accountInfo.accountName}.blob.core.windows.net/${container}/${encodeURIComponent(blobName)}?${sasToken}`;
 
       return {
         sasUrl,

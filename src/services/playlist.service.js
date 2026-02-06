@@ -7,6 +7,11 @@ class PlaylistService {
   async createPlaylist({ name, description, ownerId }) {
     if (!name) throw new ApiError(400, "Playlist name is required");
 
+    // Validate ownerId format
+    if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+      throw new ApiError(400, "Invalid owner ID format");
+    }
+
     const playlist = await Playlist.create({
       name,
       description: description || "",
@@ -77,21 +82,11 @@ class PlaylistService {
       throw new ApiError(400, "Invalid Playlist or Video ID");
     }
 
-    const playlist = await Playlist.findById(playlistId);
-    if (!playlist) throw new ApiError(404, "Playlist not found");
-
-    if (playlist.owner.toString() !== userId.toString()) {
-      throw new ApiError(
-        403,
-        "You do not have permission to modify this playlist"
-      );
-    }
-
-    // Verify video exists and atomic update in single operation using aggregation
-    // This avoids N+1 query pattern
+    // Atomic update: include ownership check in the query to avoid TOCTOU race
     const updatedPlaylist = await Playlist.findOneAndUpdate(
       {
         _id: playlistId,
+        owner: userId, // Verify ownership in atomic query
         videos: { $ne: videoId }, // Ensure video is not already in the array
       },
       {
@@ -101,11 +96,26 @@ class PlaylistService {
     ).populate("videos", "_id title");
 
     if (!updatedPlaylist) {
-      // Check if video exists to provide better error message
+      // Determine which condition failed for better error message
+      const playlist = await Playlist.findById(playlistId);
+      
+      if (!playlist) {
+        throw new ApiError(404, "Playlist not found");
+      }
+
+      if (playlist.owner.toString() !== userId.toString()) {
+        throw new ApiError(
+          403,
+          "You do not have permission to modify this playlist"
+        );
+      }
+
+      // Check if video exists
       const videoExists = await Video.findById(videoId).select("_id");
       if (!videoExists) {
         throw new ApiError(404, "Video not found");
       }
+
       // If video exists but update returned null, video is already in playlist
       throw new ApiError(400, "Video already exists in this playlist");
     }
@@ -131,12 +141,14 @@ class PlaylistService {
       );
     }
 
-    playlist.videos = playlist.videos.filter(
-      (vId) => vId.toString() !== videoId.toString()
+    // Use atomic $pull update instead of mutating and saving
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+      playlistId,
+      { $pull: { videos: videoId } },
+      { new: true }
     );
-    await playlist.save();
 
-    return playlist;
+    return updatedPlaylist;
   }
 
   async deletePlaylist(playlistId, userId) {

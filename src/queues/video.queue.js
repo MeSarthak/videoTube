@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
+import fs from "fs";
 
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 
@@ -10,15 +11,27 @@ console.log(
 // Parse the URL to check if it's secure (rediss://)
 const isSecure = redisUrl.startsWith("rediss://");
 
+// Build TLS config for secure connections
+let tlsConfig;
+if (isSecure) {
+  tlsConfig = {
+    servername: new URL(redisUrl).hostname,
+    rejectUnauthorized: process.env.NODE_ENV !== "development", // Only disable in dev
+  };
+  // Add CA bundle if provided
+  if (process.env.REDIS_CA) {
+    try {
+      tlsConfig.ca = [fs.readFileSync(process.env.REDIS_CA, "utf-8")];
+    } catch (err) {
+      console.warn(`[Queue] Failed to load REDIS_CA from ${process.env.REDIS_CA}:`, err.message);
+    }
+  }
+}
+
 const connection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
   connectTimeout: 20000, // Increase to 20s
-  tls: isSecure
-    ? {
-        servername: new URL(redisUrl).hostname,
-        rejectUnauthorized: false,
-      }
-    : undefined,
+  tls: tlsConfig,
   // Removed family: 4 to let ioredis/node resolve automatically, as forcing it might be failing if the environment is strictly IPv6 or has specific DNS resolution paths.
 });
 

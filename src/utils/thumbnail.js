@@ -2,7 +2,40 @@ import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 
+// Validate videoId to prevent path traversal
+const validateVideoId = (videoId) => {
+  const allowedPattern = /^[a-zA-Z0-9_-]+$/;
+  if (!allowedPattern.test(videoId)) {
+    throw new Error("Invalid videoId: only alphanumeric, hyphen, and underscore allowed");
+  }
+};
+
 export const generateThumbnail = async (inputPath, videoId) => {
+  // Validate videoId
+  validateVideoId(videoId);
+
+  // Validate inputPath - reject URLs and ensure it's a file path
+  if (!inputPath || typeof inputPath !== "string") {
+    throw new Error("Invalid inputPath: must be a non-empty string");
+  }
+
+  // Reject common protocols/schemes
+  if (/^(http:\/\/|https:\/\/|ftp:\/\/|pipe:|fd:)/.test(inputPath.toLowerCase())) {
+    throw new Error("Invalid inputPath: URLs and protocols not allowed");
+  }
+
+  // Resolve to absolute path and verify it's inside allowed directory
+  const resolvedPath = path.resolve(inputPath);
+  const allowedRoot = path.resolve("public/temp");
+
+  // Check if resolved path is inside allowed directory
+  if (
+    !resolvedPath.startsWith(allowedRoot + path.sep) &&
+    resolvedPath !== allowedRoot
+  ) {
+    throw new Error("Invalid inputPath: path outside allowed directory");
+  }
+
   const outDir = path.join("public", "temp", videoId);
   fs.mkdirSync(outDir, { recursive: true });
   const thumbPath = path.join(outDir, "thumb.jpg");
@@ -17,6 +50,7 @@ export const generateThumbnail = async (inputPath, videoId) => {
       "1",
       "-q:v",
       "2",
+      "-y", // Overwrite output file without prompting
       thumbPath,
     ]);
 

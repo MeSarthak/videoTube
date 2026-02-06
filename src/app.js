@@ -1,29 +1,60 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import dotenv from "dotenv";
 
-import fs from "fs";
+import fs from "fs/promises";
 
 // Rate limiting middleware
 import {
   generalLimiter,
-  authLimiter,
-  uploadLimiter,
 } from "./middlewares/rateLimiter.middleware.js";
 
-// Ensure public/temp directory exists
-const tempDir = "./public/temp";
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
-}
+// Initialize temp directory asynchronously
+const initializeTempDir = async () => {
+  const tempDir = "./public/temp";
+  try {
+    await fs.mkdir(tempDir, { recursive: true });
+  } catch (err) {
+    console.error(`Failed to create temp directory at ${tempDir}:`, err.message);
+  }
+};
 
-dotenv.config();
+// Initialize temp directory on startup
+initializeTempDir();
+
+// Validate CORS_ORIGIN with safe defaults
+const validateCorsOrigin = () => {
+  const corsOrigin = process.env.CORS_ORIGIN;
+  
+  // If no CORS_ORIGIN specified, use false (deny all) for security
+  if (!corsOrigin) {
+    console.warn(
+      "[CORS] No CORS_ORIGIN configured. Using permissive setting. Please set CORS_ORIGIN environment variable in production."
+    );
+    return process.env.NODE_ENV === "production" ? false : "*";
+  }
+  
+  // Validate it's not a wildcard in production
+  if (corsOrigin === "*" && process.env.NODE_ENV === "production") {
+    console.error(
+      "[CORS] Wildcard '*' is not allowed in production. Set CORS_ORIGIN to specific domain(s)."
+    );
+    process.exit(1);
+  }
+  
+  return corsOrigin;
+};
+
+const corsOrigin = validateCorsOrigin();
+
 const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: corsOrigin,
     credentials: true,
   })
 );
@@ -79,20 +110,28 @@ app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/notifications", notificationRouter);
 
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+  let message = err.message || "Internal Server Error";
+  let errors = err.errors || [];
+
+  // Log server errors for debugging
+  if (statusCode >= 500) {
+    console.error(`[${new Date().toISOString()}] Error ${statusCode}:`, err);
+    // Don't expose internal error details to client
+    message = "Internal Server Error";
+    errors = [];
+  }
 
   res.status(statusCode).json({
     statusCode,
     message,
     success: false,
-    errors: err.errors || [],
+    errors,
   });
 });
-
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     statusCode: 404,
@@ -102,3 +141,4 @@ app.use((req, res) => {
 });
 
 export default app;
+export { initializeTempDir };

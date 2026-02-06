@@ -13,9 +13,14 @@ const uploadOnCloudinary = async (localFilePath) => {
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
-    fs.unlinkSync(localFilePath);
+    // Check existence before unlinking to prevent ENOENT race
+    if (fs.existsSync(localFilePath)) {
+      fs.unlinkSync(localFilePath);
+    }
     return response;
   } catch (error) {
+    // Log error for debugging
+    console.error("Cloudinary upload error:", error?.message || error);
     if (fs.existsSync(localFilePath)) {
       fs.unlinkSync(localFilePath);
     }

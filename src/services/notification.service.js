@@ -6,35 +6,42 @@ class NotificationService {
   /**
    * Create a new notification.
    * Checks to ensure we don't notify a user about their own action.
+   * Uses atomic upsert to prevent race conditions.
    */
   async createNotification({ recipient, sender, type, referenceId }) {
-    // 1. Don't notify if sender is same as recipient
+    // Guard against null/undefined recipient or sender
+    if (!recipient || !sender) {
+      return null;
+    }
+
+    // Don't notify if sender is same as recipient
     if (recipient.toString() === sender.toString()) {
       return null;
     }
 
-    // 2. Check if a similar unread notification already exists to avoid spam
-    const existingNotification = await Notification.findOne({
-      recipient,
-      sender,
-      type,
-      referenceId,
-      isRead: false,
-    });
-
-    if (existingNotification) {
-      // Update the timestamp to bring it to top, but don't create new one
-      existingNotification.updatedAt = new Date();
-      await existingNotification.save();
-      return existingNotification;
-    }
-
-    const notification = await Notification.create({
-      recipient,
-      sender,
-      type,
-      referenceId,
-    });
+    // Atomic upsert: find or create, avoiding the race condition between
+    // check (findOne) and create steps. Updates existing unread notification's timestamp.
+    const notification = await Notification.findOneAndUpdate(
+      {
+        recipient,
+        sender,
+        type,
+        referenceId,
+        isRead: false,
+      },
+      {
+        recipient,
+        sender,
+        type,
+        referenceId,
+        isRead: false,
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      }
+    );
 
     return notification;
   }
@@ -43,6 +50,11 @@ class NotificationService {
    * Get paginated notifications for the current user
    */
   async getUserNotifications(userId, page = 1, limit = 10) {
+    // Validate userId before ObjectId conversion
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalid user ID format");
+    }
+
     const aggregateQuery = Notification.aggregate([
       {
         $match: {
