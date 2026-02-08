@@ -51,6 +51,7 @@ connection.on("connect", () => {
 export const videoQueue = new Queue("video-processing", { connection });
 
 export const addVideoToQueue = async (videoData) => {
+  console.log(`[Queue] Adding job to video-processing queue for videoId: ${videoData.videoId}`);
   return await videoQueue.add("process-video", videoData, {
     removeOnComplete: true,
     removeOnFail: false,

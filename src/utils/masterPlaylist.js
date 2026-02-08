@@ -1,4 +1,4 @@
-import fs from "fs";
+import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 
 export const generateMasterPlaylist = async (videoId, variants) => {
@@ -41,9 +41,9 @@ export const generateMasterPlaylist = async (videoId, variants) => {
 
   // Ensure containing directory exists before writing
   const masterDir = path.dirname(masterPath);
-  await fs.mkdir(masterDir, { recursive: true });
+  await mkdir(masterDir, { recursive: true });
 
-  await fs.promises.writeFile(masterPath, master);
+  await writeFile(masterPath, master);
 
   return masterPath;
 };

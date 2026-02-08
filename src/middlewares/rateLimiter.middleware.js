@@ -3,7 +3,7 @@
  * Protects API endpoints from abuse and DoS attacks
  */
 
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 /**
  * General API rate limiter
@@ -81,8 +81,10 @@ export const userLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    // Use userId if authenticated, otherwise use IP
-    return req.user?._id?.toString() || req.ip;
+    if (req.user?._id?.toString()) {
+      return req.user._id.toString();
+    }
+    return ipKeyGenerator(req.ip, 56);
   },
 });
 
@@ -98,9 +100,9 @@ export const viewsLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    // Defensively handle missing videoId with fallback to original URL
     const videoId = req.params.videoId ?? req.originalUrl;
-    return `${req.ip}-${videoId}`;
+    const ipKey = ipKeyGenerator(req.ip, 56);
+    return `${ipKey}-${videoId}`;
   },
 });
 

@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import fs from "fs";
+import { stat } from "fs/promises";
 import path from "path";
 import { hasAudioTrack } from "./ffprobe.js";
 
@@ -21,10 +22,10 @@ export const generateHLS = async (inputPath, videoId) => {
   }
 
   // Check if file exists and is a regular file
-  let stat;
+  let fileStat;
   try {
-    stat = await fs.promises.stat(inputPath);
-    if (!stat.isFile()) {
+    fileStat = await stat(inputPath);
+    if (!fileStat.isFile()) {
       throw new Error("inputPath must be a regular file");
     }
   } catch (err) {

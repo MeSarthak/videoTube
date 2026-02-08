@@ -18,8 +18,11 @@ class VideoService {
         uploadStatus: "pending",
       });
 
+      console.log(`[Service] Video DB record created: ${video._id}, Status: pending`);
+
       try {
         // 2. Add job to queue
+        console.log(`[Service] Adding video ${video._id} to processing queue...`);
         await addVideoToQueue({
           videoPath: file.path,
           videoId: video._id,
@@ -27,17 +30,21 @@ class VideoService {
           title: title,
           description: description,
         });
+        console.log(`[Service] Video ${video._id} added to queue successfully`);
       } catch (queueError) {
+        console.error(`[Service] Failed to add video ${video._id} - queue error:`, queueError);
         // Clean up uploaded file on queue failure
         if (file && file.path) {
           try {
             await import("fs/promises").then(fs => fs.unlink(file.path));
+            console.log(`[Service] Cleaned up file ${file.path} after queue error`);
           } catch (unlinkErr) {
             console.error(`Failed to cleanup file at ${file.path}:`, unlinkErr.message);
           }
         }
         // If queue fails, delete the DB entry to avoid zombie records
         await Video.findByIdAndDelete(video._id);
+        console.log(`[Service] Deleted video record ${video._id} due to queue failure`);
         throw new ApiError(500, "Failed to queue video for processing");
       }
 

@@ -9,7 +9,7 @@ services:
     networks:
       - videotube-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -22,6 +22,9 @@ services:
     container_name: videotube
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/node_modules
     env_file:
       - .env
     depends_on:
@@ -32,6 +35,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_URL=redis://videotube-redis:6379
 
 networks:
   videotube-network:
