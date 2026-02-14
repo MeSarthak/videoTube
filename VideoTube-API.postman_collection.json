@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "VideoTube API",
-    "description": "Complete API collection for VideoTube backend - YouTube-like video streaming platform",
+    "description": "Complete API collection for VideoTube backend - YouTube-like video streaming platform with automatic subtitle generation",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -18,6 +18,11 @@
     {
       "key": "videoId",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subtitleFormat",
+      "value": "vtt",
       "type": "string"
     }
   ],
@@ -77,8 +82,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "register"
+              ]
             }
           }
         },
@@ -111,8 +121,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
             }
           }
         },
@@ -123,8 +138,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "logout"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "logout"
+              ]
             }
           }
         },
@@ -147,8 +167,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/refresh-token",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "refresh-token"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "refresh-token"
+              ]
             }
           }
         },
@@ -168,8 +193,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/changePassword",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "changePassword"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "changePassword"
+              ]
             }
           }
         },
@@ -189,8 +219,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/users/updateAccountDetails",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "updateAccountDetails"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "updateAccountDetails"
+              ]
             }
           }
         },
@@ -204,8 +239,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/channel/:username",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "channel", ":username"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "channel",
+                ":username"
+              ],
               "variable": [
                 {
                   "key": "username",
@@ -222,8 +263,67 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/watch-history",
-              "host": ["{{baseUrl}}"],
-              "path": ["users", "watch-history"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "watch-history"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Avatar",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/updateAvatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "updateAvatar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Cover Image",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/updateCoverImage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "updateCoverImage"
+              ]
             }
           }
         }
@@ -272,14 +372,32 @@
                   "key": "description",
                   "value": "This is a test video upload",
                   "type": "text"
+                },
+                {
+                  "key": "subtitleLanguage",
+                  "value": "auto",
+                  "type": "text",
+                  "description": "Language code for transcription (auto, en, es, fr, hi, etc.). Default: auto"
+                },
+                {
+                  "key": "subtitleTask",
+                  "value": "transcribe",
+                  "type": "text",
+                  "description": "Task type: 'transcribe' (original language) or 'translate' (to English). Default: transcribe"
                 }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/videos/upload-abr",
-              "host": ["{{baseUrl}}"],
-              "path": ["videos", "upload-abr"]
-            }
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "upload-abr"
+              ]
+            },
+            "description": "Upload a video with optional subtitle generation settings. Subtitles are automatically generated using OpenAI Whisper."
           }
         },
         {
@@ -289,8 +407,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/videos/status/{{videoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["videos", "status", "{{videoId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "status",
+                "{{videoId}}"
+              ]
             }
           }
         },
@@ -304,8 +428,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/videos?page=1&limit=10&sortBy=createdAt&sortType=desc",
-              "host": ["{{baseUrl}}"],
-              "path": ["videos"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -352,8 +480,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/videos/{{videoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["videos", "{{videoId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}"
+              ]
             }
           }
         },
@@ -367,8 +500,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/videos/{{videoId}}/related?limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["videos", "{{videoId}}", "related"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "related"
+              ],
               "query": [
                 {
                   "key": "limit",
@@ -388,9 +527,185 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/videos/{{videoId}}/views",
-              "host": ["{{baseUrl}}"],
-              "path": ["videos", "{{videoId}}", "views"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "views"
+              ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subtitles",
+      "description": "Automatic subtitle generation using OpenAI Whisper. Supports 99+ languages with auto-detection.",
+      "item": [
+        {
+          "name": "Get Supported Languages",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/subtitles/languages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "subtitles",
+                "languages"
+              ]
+            },
+            "description": "Get list of all 99+ supported languages for transcription and translation tasks."
+          }
+        },
+        {
+          "name": "Get Video Subtitle Info",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/videos/{{videoId}}/subtitles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "subtitles"
+              ]
+            },
+            "description": "Get subtitle status and metadata for a video including detected language, segment count, and available file formats."
+          }
+        },
+        {
+          "name": "Get Subtitle File (SRT)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/videos/{{videoId}}/subtitles/srt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "subtitles",
+                "srt"
+              ]
+            },
+            "description": "Get SRT subtitle file URL. SRT is widely supported by video players and editors."
+          }
+        },
+        {
+          "name": "Get Subtitle File (VTT)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/videos/{{videoId}}/subtitles/vtt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "subtitles",
+                "vtt"
+              ]
+            },
+            "description": "Get WebVTT subtitle file URL. VTT is the standard format for HTML5 video players."
+          }
+        },
+        {
+          "name": "Get Subtitle File (JSON)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/videos/{{videoId}}/subtitles/json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "subtitles",
+                "json"
+              ]
+            },
+            "description": "Get JSON subtitle file URL with detailed segment data including timestamps and text."
+          }
+        },
+        {
+          "name": "Get Subtitle File (TXT)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/videos/{{videoId}}/subtitles/txt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "subtitles",
+                "txt"
+              ]
+            },
+            "description": "Get plain text transcript without timestamps. Useful for SEO and accessibility."
+          }
+        },
+        {
+          "name": "Regenerate Subtitles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"language\": \"auto\",\n  \"task\": \"transcribe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/videos/{{videoId}}/subtitles/regenerate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "videos",
+                "{{videoId}}",
+                "subtitles",
+                "regenerate"
+              ]
+            },
+            "description": "Regenerate subtitles for a video with different language or task settings. Only video owner can regenerate. Note: This feature is planned for future release."
           }
         }
       ]
@@ -408,8 +723,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/sas-tokens/download/{{videoId}}?expiresInSeconds=3600",
-              "host": ["{{baseUrl}}"],
-              "path": ["sas-tokens", "download", "{{videoId}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sas-tokens",
+                "download",
+                "{{videoId}}"
+              ],
               "query": [
                 {
                   "key": "expiresInSeconds",
@@ -426,8 +747,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/sas-tokens/upload/{{videoId}}?blobPath={{videoId}}/chunk-001.ts&expiresInSeconds=900",
-              "host": ["{{baseUrl}}"],
-              "path": ["sas-tokens", "upload", "{{videoId}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sas-tokens",
+                "upload",
+                "{{videoId}}"
+              ],
               "query": [
                 {
                   "key": "blobPath",
@@ -451,8 +778,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/sas-tokens/hls-playlist/{{videoId}}/master.m3u8?expiresInSeconds=86400",
-              "host": ["{{baseUrl}}"],
-              "path": ["sas-tokens", "hls-playlist", "{{videoId}}", "master.m3u8"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sas-tokens",
+                "hls-playlist",
+                "{{videoId}}",
+                "master.m3u8"
+              ],
               "query": [
                 {
                   "key": "expiresInSeconds",
@@ -481,8 +815,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/sas-tokens/validate",
-              "host": ["{{baseUrl}}"],
-              "path": ["sas-tokens", "validate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sas-tokens",
+                "validate"
+              ]
             }
           }
         },
@@ -505,8 +844,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/sas-tokens/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["sas-tokens", "refresh"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sas-tokens",
+                "refresh"
+              ]
             }
           }
         }
@@ -525,8 +869,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/comments/{{videoId}}?page=1&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["comments", "{{videoId}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comments",
+                "{{videoId}}"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -556,8 +905,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/comments/{{videoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["comments", "{{videoId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comments",
+                "{{videoId}}"
+              ]
             }
           }
         },
@@ -577,8 +931,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/comments/c/:commentId",
-              "host": ["{{baseUrl}}"],
-              "path": ["comments", "c", ":commentId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comments",
+                "c",
+                ":commentId"
+              ],
               "variable": [
                 {
                   "key": "commentId",
@@ -595,8 +955,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/comments/c/:commentId",
-              "host": ["{{baseUrl}}"],
-              "path": ["comments", "c", ":commentId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "comments",
+                "c",
+                ":commentId"
+              ],
               "variable": [
                 {
                   "key": "commentId",
@@ -618,8 +984,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/likes/toggle/v/{{videoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["likes", "toggle", "v", "{{videoId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "likes",
+                "toggle",
+                "v",
+                "{{videoId}}"
+              ]
             }
           }
         },
@@ -630,8 +1003,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/likes/toggle/c/:commentId",
-              "host": ["{{baseUrl}}"],
-              "path": ["likes", "toggle", "c", ":commentId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "likes",
+                "toggle",
+                "c",
+                ":commentId"
+              ],
               "variable": [
                 {
                   "key": "commentId",
@@ -648,8 +1028,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/likes/videos",
-              "host": ["{{baseUrl}}"],
-              "path": ["likes", "videos"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "likes",
+                "videos"
+              ]
             }
           }
         }
@@ -665,8 +1050,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/subscriptions/c/:channelId",
-              "host": ["{{baseUrl}}"],
-              "path": ["subscriptions", "c", ":channelId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "subscriptions",
+                "c",
+                ":channelId"
+              ],
               "variable": [
                 {
                   "key": "channelId",
@@ -686,8 +1077,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/subscriptions/c/:channelId",
-              "host": ["{{baseUrl}}"],
-              "path": ["subscriptions", "c", ":channelId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "subscriptions",
+                "c",
+                ":channelId"
+              ],
               "variable": [
                 {
                   "key": "channelId",
@@ -706,12 +1103,18 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/subscriptions/u/:userId",
-              "host": ["{{baseUrl}}"],
-              "path": ["subscriptions", "u", ":userId"],
+              "raw": "{{baseUrl}}/subscriptions/u/:subscriberId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "subscriptions",
+                "u",
+                ":subscriberId"
+              ],
               "variable": [
                 {
-                  "key": "userId",
+                  "key": "subscriberId",
                   "value": ""
                 }
               ]
@@ -739,8 +1142,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/playlists",
-              "host": ["{{baseUrl}}"],
-              "path": ["playlists"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playlists"
+              ]
             }
           }
         },
@@ -754,8 +1161,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/playlists/user/:userId",
-              "host": ["{{baseUrl}}"],
-              "path": ["playlists", "user", ":userId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playlists",
+                "user",
+                ":userId"
+              ],
               "variable": [
                 {
                   "key": "userId",
@@ -775,8 +1188,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/playlists/:playlistId",
-              "host": ["{{baseUrl}}"],
-              "path": ["playlists", ":playlistId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playlists",
+                ":playlistId"
+              ],
               "variable": [
                 {
                   "key": "playlistId",
@@ -793,8 +1211,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/playlists/add/:videoId/:playlistId",
-              "host": ["{{baseUrl}}"],
-              "path": ["playlists", "add", ":videoId", ":playlistId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playlists",
+                "add",
+                ":videoId",
+                ":playlistId"
+              ],
               "variable": [
                 {
                   "key": "videoId",
@@ -815,8 +1240,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/playlists/remove/:videoId/:playlistId",
-              "host": ["{{baseUrl}}"],
-              "path": ["playlists", "remove", ":videoId", ":playlistId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playlists",
+                "remove",
+                ":videoId",
+                ":playlistId"
+              ],
               "variable": [
                 {
                   "key": "videoId",
@@ -846,8 +1278,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/playlists/:playlistId",
-              "host": ["{{baseUrl}}"],
-              "path": ["playlists", ":playlistId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playlists",
+                ":playlistId"
+              ],
               "variable": [
                 {
                   "key": "playlistId",
@@ -864,8 +1301,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/playlists/:playlistId",
-              "host": ["{{baseUrl}}"],
-              "path": ["playlists", ":playlistId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playlists",
+                ":playlistId"
+              ],
               "variable": [
                 {
                   "key": "playlistId",
@@ -887,8 +1329,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/notifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
             }
           }
         },
@@ -899,8 +1345,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/notifications/unread-count",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", "unread-count"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "unread-count"
+              ]
             }
           }
         },
@@ -911,8 +1362,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/notifications/:notificationId/read",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", ":notificationId", "read"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ":notificationId",
+                "read"
+              ],
               "variable": [
                 {
                   "key": "notificationId",
@@ -929,8 +1386,122 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/notifications/mark-all-read",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", "mark-all-read"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "mark-all-read"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tweets",
+      "item": [
+        {
+          "name": "Create Tweet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello World!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tweets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tweets"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Tweets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tweets/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tweets",
+                "user",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Tweet",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated tweet content\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tweets/:tweetId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tweets",
+                ":tweetId"
+              ],
+              "variable": [
+                {
+                  "key": "tweetId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Tweet",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tweets/:tweetId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tweets",
+                ":tweetId"
+              ],
+              "variable": [
+                {
+                  "key": "tweetId",
+                  "value": ""
+                }
+              ]
             }
           }
         }
@@ -946,8 +1517,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/dashboard/stats",
-              "host": ["{{baseUrl}}"],
-              "path": ["dashboard", "stats"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "stats"
+              ]
             }
           }
         },
@@ -958,8 +1534,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/dashboard/videos",
-              "host": ["{{baseUrl}}"],
-              "path": ["dashboard", "videos"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "videos"
+              ]
             }
           }
         }
@@ -979,9 +1560,13 @@
             "url": {
               "raw": "http://localhost:5000/health-check",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "5000",
-              "path": ["health-check"]
+              "path": [
+                "health-check"
+              ]
             }
           }
         }

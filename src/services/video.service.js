@@ -3,10 +3,33 @@ import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { addVideoToQueue } from "../queues/video.queue.js";
+import { validateLanguage } from "../utils/transcription/languages.js";
 
 class VideoService {
-  async uploadHLSVideo({ file, title, description, ownerId }) {
+  async uploadHLSVideo({
+    file,
+    title,
+    description,
+    ownerId,
+    subtitleLanguage = "auto",
+    subtitleTask = "transcribe",
+  }) {
     if (!file) throw new ApiError(400, "Video file is required");
+
+    // Validate subtitle options
+    if (subtitleLanguage && !validateLanguage(subtitleLanguage)) {
+      throw new ApiError(
+        400,
+        `Unsupported subtitle language: ${subtitleLanguage}`
+      );
+    }
+
+    if (subtitleTask && !["transcribe", "translate"].includes(subtitleTask)) {
+      throw new ApiError(
+        400,
+        'Invalid subtitle task. Use "transcribe" or "translate"'
+      );
+    }
 
     try {
       // 1. Create initial DB entry with "pending" status
@@ -16,35 +39,59 @@ class VideoService {
         owner: ownerId,
         status: "pending",
         uploadStatus: "pending",
+        subtitles: {
+          status: "pending",
+          language: subtitleLanguage || "auto",
+          task: subtitleTask || "transcribe",
+        },
       });
 
-      console.log(`[Service] Video DB record created: ${video._id}, Status: pending`);
+      console.log(
+        `[Service] Video DB record created: ${video._id}, Status: pending`
+      );
+      console.log(
+        `[Service] Subtitle options: language=${subtitleLanguage}, task=${subtitleTask}`
+      );
 
       try {
         // 2. Add job to queue
-        console.log(`[Service] Adding video ${video._id} to processing queue...`);
+        console.log(
+          `[Service] Adding video ${video._id} to processing queue...`
+        );
         await addVideoToQueue({
           videoPath: file.path,
           videoId: video._id,
           userId: ownerId,
           title: title,
           description: description,
+          subtitleLanguage: subtitleLanguage || "auto",
+          subtitleTask: subtitleTask || "transcribe",
         });
         console.log(`[Service] Video ${video._id} added to queue successfully`);
       } catch (queueError) {
-        console.error(`[Service] Failed to add video ${video._id} - queue error:`, queueError);
+        console.error(
+          `[Service] Failed to add video ${video._id} - queue error:`,
+          queueError
+        );
         // Clean up uploaded file on queue failure
         if (file && file.path) {
           try {
-            await import("fs/promises").then(fs => fs.unlink(file.path));
-            console.log(`[Service] Cleaned up file ${file.path} after queue error`);
+            await import("fs/promises").then((fs) => fs.unlink(file.path));
+            console.log(
+              `[Service] Cleaned up file ${file.path} after queue error`
+            );
           } catch (unlinkErr) {
-            console.error(`Failed to cleanup file at ${file.path}:`, unlinkErr.message);
+            console.error(
+              `Failed to cleanup file at ${file.path}:`,
+              unlinkErr.message
+            );
           }
         }
         // If queue fails, delete the DB entry to avoid zombie records
         await Video.findByIdAndDelete(video._id);
-        console.log(`[Service] Deleted video record ${video._id} due to queue failure`);
+        console.log(
+          `[Service] Deleted video record ${video._id} due to queue failure`
+        );
         throw new ApiError(500, "Failed to queue video for processing");
       }
 

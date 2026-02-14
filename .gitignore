@@ -2,6 +2,9 @@
 public/temp/*
 !public/temp/.gitkeep
 
+# ML model files (too large for GitHub, download at runtime)
+public/model/
+
 # Logs
 logs
 *.log

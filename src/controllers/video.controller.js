@@ -5,22 +5,29 @@ import { videoService } from "../services/video.service.js";
 
 const uploadHLSVideo = asyncHandler(async (req, res) => {
   const ownerId = req.user._id;
-  const { title, description } = req.body;
+  const { title, description, subtitleLanguage, subtitleTask } = req.body;
 
   console.log(`[Controller] uploadHLSVideo called by user: ${ownerId}`);
+  console.log(
+    `[Controller] Subtitle options: language=${subtitleLanguage || "auto"}, task=${subtitleTask || "transcribe"}`
+  );
 
   // Handle both single file (video only) and fields (video + thumbnail) uploads
   const file = req.files?.video ? req.files.video[0] : req.file;
   const thumbnail = req.files?.thumbnail ? req.files.thumbnail[0] : null;
 
   if (file) {
-    console.log(`[Controller] Video file detected: ${file.originalname}, Size: ${file.size}, Mime: ${file.mimetype}`);
+    console.log(
+      `[Controller] Video file detected: ${file.originalname}, Size: ${file.size}, Mime: ${file.mimetype}`
+    );
   } else {
     console.warn("[Controller] No video file detected in request");
   }
 
   if (thumbnail) {
-    console.log(`[Controller] Thumbnail file detected: ${thumbnail.originalname}`);
+    console.log(
+      `[Controller] Thumbnail file detected: ${thumbnail.originalname}`
+    );
   }
 
   if (!file) {
@@ -33,9 +40,13 @@ const uploadHLSVideo = asyncHandler(async (req, res) => {
     title,
     description,
     ownerId,
+    subtitleLanguage: subtitleLanguage || "auto",
+    subtitleTask: subtitleTask || "transcribe",
   });
 
-  console.log(`[Controller] Video upload accepted, queues triggered. VideoID: ${video._id}`);
+  console.log(
+    `[Controller] Video upload accepted, queues triggered. VideoID: ${video._id}`
+  );
 
   return res.status(202).json(
     new ApiResponse(

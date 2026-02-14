@@ -8,9 +8,7 @@ import cors from "cors";
 import fs from "fs/promises";
 
 // Rate limiting middleware
-import {
-  generalLimiter,
-} from "./middlewares/rateLimiter.middleware.js";
+import { generalLimiter } from "./middlewares/rateLimiter.middleware.js";
 
 // Initialize temp directory asynchronously
 const initializeTempDir = async () => {
@@ -18,7 +16,10 @@ const initializeTempDir = async () => {
   try {
     await fs.mkdir(tempDir, { recursive: true });
   } catch (err) {
-    console.error(`Failed to create temp directory at ${tempDir}:`, err.message);
+    console.error(
+      `Failed to create temp directory at ${tempDir}:`,
+      err.message
+    );
   }
 };
 
@@ -28,7 +29,7 @@ initializeTempDir();
 // Validate CORS_ORIGIN with safe defaults
 const validateCorsOrigin = () => {
   const corsOrigin = process.env.CORS_ORIGIN;
-  
+
   // If no CORS_ORIGIN specified, use false (deny all) for security
   if (!corsOrigin) {
     console.warn(
@@ -36,7 +37,7 @@ const validateCorsOrigin = () => {
     );
     return process.env.NODE_ENV === "production" ? false : "*";
   }
-  
+
   // Validate it's not a wildcard in production
   if (corsOrigin === "*" && process.env.NODE_ENV === "production") {
     console.error(
@@ -44,7 +45,7 @@ const validateCorsOrigin = () => {
     );
     process.exit(1);
   }
-  
+
   return corsOrigin;
 };
 
@@ -89,6 +90,7 @@ import { tweetRouter } from "./routes/tweet.routes.js";
 import { dashboardRouter } from "./routes/dashboard.routes.js";
 import { notificationRouter } from "./routes/notification.routes.js";
 import { sasTokenRouter } from "./routes/sas-token.routes.js";
+import { subtitleRouter } from "./routes/subtitle.routes.js";
 
 //use routes
 
@@ -101,6 +103,7 @@ app.use("/health-check", (req, res) => {
 });
 app.use("/api/v1/users", userRouter); //http://localhost:5000/api/v1/users/....
 app.use("/api/v1/videos", videoRouter); //http://localhost:5000/api/v1/videos/....
+app.use("/api/v1/subtitles", subtitleRouter); //http://localhost:5000/api/v1/subtitles/languages
 app.use("/api/v1/sas-tokens", sasTokenRouter); //http://localhost:5000/api/v1/sas-tokens/....
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/likes", likeRouter);
@@ -109,7 +112,6 @@ app.use("/api/v1/playlists", playlistRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/notifications", notificationRouter);
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {

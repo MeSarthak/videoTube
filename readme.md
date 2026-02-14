@@ -107,23 +107,67 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 
 ### 2. Videos (`/videos`)
 
-| Method  | Endpoint                   | Description                                        | Auth | Query Params / Body                                             |
-| :------ | :------------------------- | :------------------------------------------------- | :--- | :-------------------------------------------------------------- |
-| `POST`  | `/videos/upload-abr`       | Upload video (HLS)                                 | ✅   | Body: `video` (file), `title`, `description`                    |
-| `GET`   | `/videos`                  | Search & Home Feed                                 | ❌   | Query: `page`, `limit`, `query`, `sortBy`, `sortType`, `userId` |
-| `GET`   | `/videos/:videoId`         | Get video details                                  | ⚠️   | -                                                               |
-| `GET`   | `/videos/:videoId/related` | Get related videos (same channel or similar title) | ❌   | Query: `limit` (default 10)                                     |
-| `PATCH` | `/videos/:videoId/views`   | Increment view count                               | ❌   | -                                                               |
-| `GET`   | `/videos/status/:videoId`  | Check processing status                            | ✅   | -                                                               |
+| Method  | Endpoint                   | Description                                        | Auth | Query Params / Body                                                                                    |
+| :------ | :------------------------- | :------------------------------------------------- | :--- | :----------------------------------------------------------------------------------------------------- |
+| `POST`  | `/videos/upload-abr`       | Upload video (HLS) with auto-subtitles             | ✅   | Body: `video` (file), `title`, `description`, `subtitleLanguage` (optional), `subtitleTask` (optional) |
+| `GET`   | `/videos`                  | Search & Home Feed                                 | ❌   | Query: `page`, `limit`, `query`, `sortBy`, `sortType`, `userId`                                        |
+| `GET`   | `/videos/:videoId`         | Get video details                                  | ⚠️   | -                                                                                                      |
+| `GET`   | `/videos/:videoId/related` | Get related videos (same channel or similar title) | ❌   | Query: `limit` (default 10)                                                                            |
+| `PATCH` | `/videos/:videoId/views`   | Increment view count                               | ❌   | -                                                                                                      |
+| `GET`   | `/videos/status/:videoId`  | Check processing status                            | ✅   | -                                                                                                      |
 
-### 3. Dashboard (`/dashboard`)
+**Subtitle Options for Upload:**
+
+- `subtitleLanguage`: Language code for transcription. Use `auto` for auto-detection or specify a language code (e.g., `en`, `es`, `fr`, `hi`). Default: `auto`
+- `subtitleTask`: Either `transcribe` (keep original language) or `translate` (translate to English). Default: `transcribe`
+
+### 3. Subtitles (`/subtitles` & `/videos/:videoId/subtitles`)
+
+Automatic subtitle generation powered by OpenAI Whisper. Supports 99+ languages with auto-detection.
+
+| Method | Endpoint                                | Description                       | Auth | Body Params                  |
+| :----- | :-------------------------------------- | :-------------------------------- | :--- | :--------------------------- |
+| `GET`  | `/subtitles/languages`                  | Get all 99+ supported languages   | ❌   | -                            |
+| `GET`  | `/videos/:videoId/subtitles`            | Get subtitle info (status, files) | ❌   | -                            |
+| `GET`  | `/videos/:videoId/subtitles/:format`    | Get subtitle file URL             | ❌   | `:format` = srt/vtt/json/txt |
+| `POST` | `/videos/:videoId/subtitles/regenerate` | Regenerate subtitles (owner only) | ✅   | `language`, `task`           |
+
+**Supported Formats:**
+
+- **SRT**: SubRip format - widely supported by video players and editors
+- **VTT**: WebVTT format - standard for HTML5 video players
+- **JSON**: Detailed segment data with timestamps
+- **TXT**: Plain text transcript without timestamps (for SEO/accessibility)
+
+**Subtitle Response Schema:**
+
+```json
+{
+  "subtitles": {
+    "status": "completed", // pending, processing, completed, failed
+    "language": "auto", // User-requested language
+    "detectedLanguage": "en", // Auto-detected language
+    "task": "transcribe", // transcribe or translate
+    "files": {
+      "srt": "https://...",
+      "vtt": "https://...",
+      "json": "https://...",
+      "txt": "https://..."
+    },
+    "segmentCount": 42,
+    "processedAt": "2026-02-14T..."
+  }
+}
+```
+
+### 4. Dashboard (`/dashboard`)
 
 | Method | Endpoint            | Description                        | Auth |
 | :----- | :------------------ | :--------------------------------- | :--- |
 | `GET`  | `/dashboard/stats`  | Get total views, subs, videos, etc | ✅   |
 | `GET`  | `/dashboard/videos` | Get all videos uploaded by user    | ✅   |
 
-### 4. Community / Tweets (`/tweets`)
+### 5. Community / Tweets (`/tweets`)
 
 | Method   | Endpoint               | Description       | Auth | Body Params |
 | :------- | :--------------------- | :---------------- | :--- | :---------- |
@@ -132,7 +176,7 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 | `PATCH`  | `/tweets/:tweetId`     | Update a tweet    | ✅   | `content`   |
 | `DELETE` | `/tweets/:tweetId`     | Delete a tweet    | ✅   | -           |
 
-### 5. Playlists (`/playlists`)
+### 6. Playlists (`/playlists`)
 
 | Method   | Endpoint                                 | Description             | Auth | Body Params           |
 | :------- | :--------------------------------------- | :---------------------- | :--- | :-------------------- |
@@ -144,7 +188,7 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 | `PATCH`  | `/playlists/remove/:videoId/:playlistId` | Remove video from list  | ✅   | -                     |
 | `GET`    | `/playlists/user/:userId`                | Get user's playlists    | ✅   | -                     |
 
-### 6. Subscriptions (`/subscriptions`)
+### 7. Subscriptions (`/subscriptions`)
 
 | Method | Endpoint                         | Description                  | Auth |
 | :----- | :------------------------------- | :--------------------------- | :--- |
@@ -152,7 +196,7 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 | `GET`  | `/subscriptions/c/:channelId`    | Get subscribers list         | ✅   |
 | `GET`  | `/subscriptions/u/:subscriberId` | Get subscribed channels list | ✅   |
 
-### 7. Likes (`/likes`)
+### 8. Likes (`/likes`)
 
 | Method | Endpoint                     | Description            | Auth |
 | :----- | :--------------------------- | :--------------------- | :--- |
@@ -161,7 +205,7 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 | `POST` | `/likes/toggle/t/:tweetId`   | Toggle like on tweet   | ✅   |
 | `GET`  | `/likes/videos`              | Get all liked videos   | ✅   |
 
-### 8. Comments (`/comments`)
+### 9. Comments (`/comments`)
 
 | Method   | Endpoint                 | Description            | Auth | Body Params            |
 | :------- | :----------------------- | :--------------------- | :--- | :--------------------- |
@@ -170,7 +214,7 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 | `PATCH`  | `/comments/c/:commentId` | Update a comment       | ✅   | `content`              |
 | `DELETE` | `/comments/c/:commentId` | Delete a comment       | ✅   | -                      |
 
-### 9. Notifications (`/notifications`)
+### 10. Notifications (`/notifications`)
 
 | Method  | Endpoint                       | Description                       | Auth | Query Params           |
 | :------ | :----------------------------- | :-------------------------------- | :--- | :--------------------- |
@@ -179,13 +223,11 @@ Protected routes (marked with ✅) require an access token. To authenticate:
 | `PATCH` | `/notifications/:id/read`      | Mark a notification as read       | ✅   | -                      |
 | `PATCH` | `/notifications/mark-all-read` | Mark all notifications as read    | ✅   | -                      |
 
-### 10. Health Check (`/health-check`)
+### 11. Health Check (`/health-check`)
 
 | Method | Endpoint        | Description         | Auth |
 | :----- | :-------------- | :------------------ | :--- |
 | `GET`  | `/health-check` | Check system health | ❌   |
-
----
 
 ## 📦 Data Structures (Responses)
 
@@ -221,8 +263,43 @@ The API uses a standardized response format for all requests:
 - **Framework:** Express.js
 - **Database:** MongoDB (Mongoose)
 - **Caching/Queues:** Redis (BullMQ)
-- **Storage:** Cloudinary (Images), Azure Blob Storage (Videos)
+- **Storage:** Cloudinary (Images), Azure Blob Storage (Videos & Subtitles)
 - **Video Processing:** FFmpeg (HLS Transcoding)
+- **Transcription:** OpenAI Whisper (99+ languages, auto-detection)
 - **Testing:** Jest, Supertest
+
+---
+
+## ⚙️ Environment Variables
+
+```env
+# Server
+PORT=8000
+MONGODB_URI=mongodb://localhost:27017/videotube
+CORS_ORIGIN=*
+
+# Authentication (Generate strong secrets for production)
+ACCESS_TOKEN_SECRET=your_access_token_secret
+ACCESS_TOKEN_EXPIRY=1d
+REFRESH_TOKEN_SECRET=your_refresh_token_secret
+REFRESH_TOKEN_EXPIRY=10d
+
+# Cloudinary (Images)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Azure Blob Storage (Videos & Subtitles)
+STORAGE_ACCOUNT_NAME=your_account_name
+CONTAINER_NAME=your_container_name
+AZURE_STORAGE_CONNECTION_STRING=your_connection_string
+SAS_TOKEN=your_sas_token
+
+# Redis (Queues)
+REDIS_URL=redis://localhost:6379
+
+# Whisper Transcription
+WHISPER_MODEL=base  # Options: tiny, base, small, medium, large
+```
 
 ---
